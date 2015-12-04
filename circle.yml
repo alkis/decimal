@@ -1,0 +1,17 @@
+dependencies:
+  cache_directories:
+    - rust-1.4.0-x86_64-unknown-linux-gnu
+    - target
+  pre:
+    - >
+      if [[ ! -d rust-1.4.0-x86_64-unknown-linux-gnu ]]; then
+        wget http://static.rust-lang.org/dist/rust-1.4.0-x86_64-unknown-linux-gnu.tar.gz
+        tar xvzf rust-1.4.0-x86_64-unknown-linux-gnu.tar.gz
+      fi;
+      sudo rust-1.4.0-x86_64-unknown-linux-gnu/install.sh --without=rust-docs
+  post:
+    - cargo build --verbose
+
+test:
+  override:
+    - cargo test --verbose
