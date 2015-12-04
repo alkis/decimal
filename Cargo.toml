@@ -1,0 +1,4 @@
+[package]
+name = "decimal"
+version = "0.1.0"
+authors = ["Alkis Evlogimenos <alkis@evlogimenos.com>"]
