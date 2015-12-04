@@ -2443,7 +2443,7 @@ uInt decFloatIsSignalling(const decFloat *df) {
   return DFISSNAN(df);
   }
 uInt decFloatIsSigned(const decFloat *df) {
-  return DFISSIGNED(df);
+  return DFISSIGNED(df)!=0;
   }
 uInt decFloatIsSubnormal(const decFloat *df) {
   if (DFISSPECIAL(df)) return 0;
