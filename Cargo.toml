@@ -2,3 +2,12 @@
 name = "decimal"
 version = "0.1.0"
 authors = ["Alkis Evlogimenos <alkis@evlogimenos.com>"]
+exclude = ["src/decNumber/**"]
+build = "build.rs"
+description = "Decimal floating point arithmetic for Rust"
+repository = "https://github.com/alkis/decimal"
+keywords = ["decimal", "decNumber"]
+license = "Apache-2.0"
+
+[build-dependencies]
+gcc = "~0.3"
