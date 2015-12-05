@@ -17,4 +17,5 @@ mod dec128;
 mod error;
 
 pub use context::rounding;
+pub use context::Context;
 pub use dec128::d128;
