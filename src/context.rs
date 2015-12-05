@@ -39,29 +39,21 @@ pub enum decClass {
     DEC_CLASS_POS_INF,
 }
 
-#[allow(non_upper_case_globals,dead_code)]
-pub const DEC_Conversion_syntax: u32 = 0x00000001;
-#[allow(non_upper_case_globals,dead_code)]
-pub const DEC_Division_by_zero: u32 = 0x00000002;
-#[allow(non_upper_case_globals,dead_code)]
-pub const DEC_Division_impossible: u32 = 0x00000004;
-#[allow(non_upper_case_globals,dead_code)]
-pub const DEC_Division_undefined: u32 = 0x00000008;
-#[allow(non_upper_case_globals,dead_code)]
-pub const DEC_Insufficient_storage: u32 = 0x00000010;
-#[allow(non_upper_case_globals,dead_code)]
-pub const DEC_Inexact: u32 = 0x00000020;
-#[allow(non_upper_case_globals,dead_code)]
-pub const DEC_Invalid_context: u32 = 0x00000040;
-#[allow(non_upper_case_globals,dead_code)]
-pub const DEC_Invalid_operation: u32 = 0x00000080;
-#[allow(non_upper_case_globals,dead_code)]
-pub const DEC_Overflow: u32 = 0x00000200;
-#[allow(non_upper_case_globals,dead_code)]
-pub const DEC_Clamped: u32 = 0x000000400;
-#[allow(non_upper_case_globals,dead_code)]
-pub const DEC_Rounded: u32 = 0x000000800;
-#[allow(non_upper_case_globals,dead_code)]
-pub const DEC_Subnormal: u32 = 0x00001000;
-#[allow(non_upper_case_globals,dead_code)]
-pub const DEC_Underflow: u32 = 0x00002000;
+bitflags! {
+    flags Status: u32 {
+        const CONVERSION_SYNTAX    = 0x00000001,
+        const DIVISION_BY_ZERO     = 0x00000002,
+        const DIVISION_IMPOSSIBLE  = 0x00000004,
+        const DIVISION_UNDEFINED   = 0x00000008,
+        const INSUFFICIENT_STORAGE = 0x00000010,
+        const INEXACT              = 0x00000020,
+        const INVALID_CONTEXT      = 0x00000040,
+        const INVALID_OPERATION    = 0x00000080,
+        const LOST_DIGITS          = 0x00000100,
+        const OVERFLOW             = 0x00000200,
+        const CLAMPED              = 0x00000400,
+        const ROUNDED              = 0x00000800,
+        const SUBNORMAL            = 0x00001000,
+        const UNDERFLOW            = 0x00002000,
+    }
+}

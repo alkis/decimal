@@ -10,6 +10,7 @@ keywords = ["decimal", "decNumber"]
 license = "Apache-2.0"
 
 [dependencies]
+bitflags = "~0.3"
 libc = "~0.2"
 quick-error = "~0.1"
 

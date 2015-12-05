@@ -50,12 +50,12 @@ impl FromStr for d128 {
                         let ctx: &mut dCtx = &mut *ctx.borrow_mut();
                         decContextZeroStatus(ctx);
                         decQuadFromString(&mut res, cstr.into_raw(), ctx);
-                        let status = decContextGetStatus(ctx);
-                        if (status & DEC_Conversion_syntax) != 0 {
+                        let status = Status::from_bits(decContextGetStatus(ctx)).unwrap();
+                        if status.intersects(CONVERSION_SYNTAX) {
                             Err(error::Error::Conversion)
-                        } else if (status & DEC_Overflow) != 0 {
+                        } else if status.intersects(OVERFLOW) {
                             Err(error::Error::Overflow)
-                        } else if (status & DEC_Underflow) != 0 {
+                        } else if status.intersects(UNDERFLOW) {
                             Err(error::Error::Underflow)
                         } else {
                             Ok(res)
