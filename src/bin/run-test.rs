@@ -6,34 +6,29 @@ use std::path::Path;
 use std::io::BufRead;
 use std::io::BufReader;
 
-/// Splits the line into the first token and the rest of the line.
-/// The token can be quoted in single or double quotes and it will be returned without the quotes.
-/// When the rest of the line is empty it means the whole line was processed.
-///
-/// # Example
-///
-/// ```rust
-/// let line = "a '1 2' b";
-/// let (token, line) = split_token(line);
-/// assert_eq!(token, "a");
-/// assert_eq!(line, "'1 2' b");
-/// let (token, line) = split_token(line);
-/// assert_eq!(token, "1 2");
-/// assert_eq!(line, "b");
-/// let (token, line) = split_token(line);
-/// assert_eq!(token, "b");
-/// assert_eq!(line, "");
-/// ```
+fn find_end_quote(s: &str, quote: char) -> Option<usize> {
+    match s.find(quote) {
+        None => None,
+        Some(i) => {
+            match s[i+1..].chars().next() {
+                None => Some(i),
+                Some(c) if c == quote => find_end_quote(&s[i+2..], quote).and_then(|j| { Some(i + 2 + j) }),
+                Some(_) => Some(i),
+            }
+        }
+    }
+}
+
 fn split_token<'a>(line: &'a str) -> (&'a str, &'a str) {
     let line = line.trim_left();
     if line.starts_with("--") {
         ("", "")
     } else if line.starts_with("\"") {
-        let end = line[1..].find('"').expect("Unmatched double quote");
-        (&line[1..end], &line[end + 2..])
+        let end = find_end_quote(&line[1..], '"').expect("Unmatched double quote") + 1;
+        (&line[1..end], &line[end + 1..])
     } else if line.starts_with("'") {
-        let end = line[1..].find('\'').expect("Unmatched single quote");
-        (&line[1..end], &line[end + 2..])
+        let end = find_end_quote(&line[1..], '\'').expect("Unmatched single quote") + 1;
+        (&line[1..end], &line[end + 1..])
     } else {
         match line.find(char::is_whitespace) {
             None => (line, ""),
