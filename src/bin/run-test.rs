@@ -300,7 +300,7 @@ fn parse_line<'a>(line: &'a str) -> Option<Instr<'a>> {
     }
 }
 
-fn run_test(path: &Path) {
+fn read_test(path: &Path) {
     let file = File::open(path);
     println!("{:?}", file);
     for line in BufReader::new(File::open(path).unwrap()).lines() {
@@ -313,5 +313,5 @@ fn run_test(path: &Path) {
 fn main() {
     let filepath = std::env::args().nth(1).expect("Filename to test");
     let path = Path::new(&filepath);
-    run_test(path);
+    read_test(path);
 }
