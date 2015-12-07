@@ -1,3 +1,6 @@
+use super::Class;
+use super::Status;
+
 use context::*;
 use error;
 use libc::{c_char, int32_t, uint8_t, uint32_t};
@@ -12,7 +15,7 @@ use std::num::FpCategory;
 thread_local!(static CTX: RefCell<Context> = RefCell::new(d128::ctx()));
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 // decQuad
 pub struct d128 {
     bytes: [uint8_t; 16],
@@ -52,11 +55,11 @@ impl FromStr for d128 {
                     decQuadFromString(&mut res, cstr.into_raw(), &mut ctx);
                 }
                 let status = ctx.status();
-                if status.intersects(CONVERSION_SYNTAX) {
+                if status.intersects(super::CONVERSION_SYNTAX) {
                     Err(error::Error::Conversion)
-                } else if status.intersects(OVERFLOW) {
+                } else if status.intersects(super::OVERFLOW) {
                     Err(error::Error::Overflow)
-                } else if status.intersects(UNDERFLOW) {
+                } else if status.intersects(super::UNDERFLOW) {
                     Err(error::Error::Underflow)
                 } else {
                     Ok(res)
@@ -380,14 +383,14 @@ impl d128 {
     // Non-computational.
     pub fn classify(&self) -> FpCategory {
         use ::std::num::FpCategory::*;
-        use context::decClass::*;
+        use super::Class::*;
         unsafe {
             match decQuadClass(self) {
-                DEC_CLASS_QNAN | DEC_CLASS_SNAN => Nan,
-                DEC_CLASS_POS_INF | DEC_CLASS_NEG_INF => Infinite,
-                DEC_CLASS_POS_ZERO | DEC_CLASS_NEG_ZERO => Zero,
-                DEC_CLASS_POS_NORMAL | DEC_CLASS_NEG_NORMAL => Normal,
-                DEC_CLASS_POS_SUBNORMAL | DEC_CLASS_NEG_SUBNORMAL => Subnormal,
+                Qnan | Snan => Nan,
+                PosInf | NegInf => Infinite,
+                PosZero | NegZero => Zero,
+                PosNormal | NegNormal => Normal,
+                PosSubnormal | NegSubnormal => Subnormal,
             }
         }
     }
@@ -463,7 +466,11 @@ extern {
     fn decQuadAbs(res: *mut d128, src: *const d128, ctx: *mut Context) -> *mut d128;
     fn decQuadAdd(res: *mut d128, a: *const d128, b: *const d128, ctx: *mut Context) -> *mut d128;
     fn decQuadAnd(res: *mut d128, a: *const d128, b: *const d128, ctx: *mut Context) -> *mut d128;
-    fn decQuadDivide(res: *mut d128, a: *const d128, b: *const d128, ctx: *mut Context) -> *mut d128;
+    fn decQuadDivide(res: *mut d128,
+                     a: *const d128,
+                     b: *const d128,
+                     ctx: *mut Context)
+                     -> *mut d128;
     fn decQuadFMA(res: *mut d128,
                   a: *const d128,
                   b: *const d128,
@@ -499,9 +506,21 @@ extern {
                         b: *const d128,
                         ctx: *mut Context)
                         -> *mut d128;
-    fn decQuadRotate(res: *mut d128, a: *const d128, b: *const d128, ctx: *mut Context) -> *mut d128;
-    fn decQuadScaleB(res: *mut d128, a: *const d128, b: *const d128, ctx: *mut Context) -> *mut d128;
-    fn decQuadShift(res: *mut d128, a: *const d128, b: *const d128, ctx: *mut Context) -> *mut d128;
+    fn decQuadRotate(res: *mut d128,
+                     a: *const d128,
+                     b: *const d128,
+                     ctx: *mut Context)
+                     -> *mut d128;
+    fn decQuadScaleB(res: *mut d128,
+                     a: *const d128,
+                     b: *const d128,
+                     ctx: *mut Context)
+                     -> *mut d128;
+    fn decQuadShift(res: *mut d128,
+                    a: *const d128,
+                    b: *const d128,
+                    ctx: *mut Context)
+                    -> *mut d128;
     fn decQuadSubtract(res: *mut d128,
                        a: *const d128,
                        b: *const d128,
@@ -509,11 +528,15 @@ extern {
                        -> *mut d128;
     fn decQuadXor(res: *mut d128, a: *const d128, b: *const d128, ctx: *mut Context) -> *mut d128;
     // Comparisons.
-    fn decQuadCompare(res: *mut d128, a: *const d128, b: *const d128, ctx: *mut Context) -> *mut d128;
+    fn decQuadCompare(res: *mut d128,
+                      a: *const d128,
+                      b: *const d128,
+                      ctx: *mut Context)
+                      -> *mut d128;
     // Copies.
     fn decQuadCanonical(res: *mut d128, src: *const d128) -> *mut d128;
     // Non-computational.
-    fn decQuadClass(src: *const d128) -> decClass;
+    fn decQuadClass(src: *const d128) -> Class;
     fn decQuadDigits(src: *const d128) -> uint32_t;
     fn decQuadIsCanonical(src: *const d128) -> uint32_t;
     fn decQuadIsFinite(src: *const d128) -> uint32_t;
