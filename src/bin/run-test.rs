@@ -412,26 +412,37 @@ impl<'a> fmt::Display for TestResult<'a> {
     }
 }
 
+fn parse_operand(s: &str) -> d128 {
+    if s.chars().nth(0) == Some('#') {
+        d128::from_hex(&s[1..])
+    } else {
+        use std::str::FromStr;
+        d128::from_str(s).expect("Invalid decimal")
+    }
+}
+
 macro_rules! simple_op {
-    ($res:ident = $func:ident($arg0:ident)) => {
+    ($test:ident, $res:ident = $func:ident($arg0:ident)) => {
         {
-            let $arg0 = d128::from_str($arg0).expect("Invalid decimal");
-            $res = format!("{}", d128::$func($arg0));
+            if $arg0 == "#" { return TestResult::Ignored($test); }
+            let $arg0 = parse_operand($arg0);
+            $res = d128::$func($arg0);
         }
     };
-    ($res:ident = $func:ident($arg0:ident, $($arg:ident),+)) => {
+    ($test:ident, $res:ident = $func:ident($arg0:ident, $($arg:ident),+)) => {
         {
-            let $arg0 = d128::from_str($arg0).expect("Invalid decimal");
+            if $arg0 == "#" { return TestResult::Ignored($test); }
+            let $arg0 = parse_operand($arg0);
             $(
-                let $arg = d128::from_str($arg).expect("Invalid decimal");
+                if $arg == "#" { return TestResult::Ignored($test); }
+                let $arg = parse_operand($arg);
             )+
-            $res = format!("{}", d128::$func($arg0, $(&$arg),+));
+            $res = d128::$func($arg0, $(&$arg),+);
         }
     };
 }
 
 fn run_test<'a>(env: &Environment, test: Test<'a>) -> TestResult<'a> {
-    use std::str::FromStr;
     use std::ops::*;
 
     let d128_env = Environment{
@@ -446,38 +457,47 @@ fn run_test<'a>(env: &Environment, test: Test<'a>) -> TestResult<'a> {
         return TestResult::Ignored(test)
     }
     d128::zero_status();
-    let value: String;
+    let value: d128;
     let status: Status;
 
     match test.op {
-        Op::Abs(a) => simple_op!(value = abs(a)),
-        Op::Add(a, b) => simple_op!(value = add(a, b)),
-        Op::And(a, b) => simple_op!(value = bitand(a, b)),
-        Op::Canonical(a) => simple_op!(value = canonical(a)),
-        Op::Divide(a, b) => simple_op!(value = div(a, b)),
-        Op::Fma(a, b, c) => simple_op!(value = mul_add(a, b, c)),
-        Op::Invert(a) => simple_op!(value = not(a)),
-        Op::LogB(a) => simple_op!(value = logb(a)),
-        Op::Max(a, b) => simple_op!(value = max(a, b)),
-        Op::Min(a, b) => simple_op!(value = min(a, b)),
-        Op::Minus(a) => simple_op!(value = neg(a)),
-        Op::Multiply(a, b) => simple_op!(value = mul(a, b)),
-        Op::NextMinus(a) => simple_op!(value = previous(a)),
-        Op::NextPlus(a) => simple_op!(value = next(a)),
-        Op::NextToward(a, b) => simple_op!(value = towards(a, b)),
-        Op::Or(a, b) => simple_op!(value = bitor(a, b)),
-        Op::Quantize(a, b) => simple_op!(value = quantize(a, b)),
-        Op::Reduce(a) => simple_op!(value = reduce(a)),
-        Op::Remainder(a, b) => simple_op!(value = rem(a, b)),
-        Op::Rotate(a, b) => simple_op!(value = rotate(a, b)),
-        Op::ScaleB(a, b) => simple_op!(value = scaleb(a, b)),
-        Op::Subtract(a, b) => simple_op!(value = sub(a, b)),
-        Op::Xor(a, b) => simple_op!(value = bitxor(a, b)),
+        Op::Abs(a) => simple_op!(test, value = abs(a)),
+        Op::Add(a, b) => simple_op!(test, value = add(a, b)),
+        Op::And(a, b) => simple_op!(test, value = bitand(a, b)),
+        Op::Apply(a) => {
+            if a == "#" { return TestResult::Ignored(test) };
+            value = parse_operand(a);
+        }
+        Op::Canonical(a) => simple_op!(test, value = canonical(a)),
+        Op::Divide(a, b) => simple_op!(test, value = div(a, b)),
+        Op::Fma(a, b, c) => simple_op!(test, value = mul_add(a, b, c)),
+        Op::Invert(a) => simple_op!(test, value = not(a)),
+        Op::LogB(a) => simple_op!(test, value =logb(a)),
+        Op::Max(a, b) => simple_op!(test, value =max(a, b)),
+        Op::Min(a, b) => simple_op!(test, value =min(a, b)),
+        Op::Minus(a) => simple_op!(test, value =neg(a)),
+        Op::Multiply(a, b) => simple_op!(test, value =mul(a, b)),
+        Op::NextMinus(a) => simple_op!(test, value =previous(a)),
+        Op::NextPlus(a) => simple_op!(test, value =next(a)),
+        Op::NextToward(a, b) => simple_op!(test, value =towards(a, b)),
+        Op::Or(a, b) => simple_op!(test, value =bitor(a, b)),
+        Op::Quantize(a, b) => simple_op!(test, value =quantize(a, b)),
+        Op::Reduce(a) => simple_op!(test, value =reduce(a)),
+        Op::Remainder(a, b) => simple_op!(test, value =rem(a, b)),
+        Op::Rotate(a, b) => simple_op!(test, value =rotate(a, b)),
+        Op::ScaleB(a, b) => simple_op!(test, value =scaleb(a, b)),
+        Op::Subtract(a, b) => simple_op!(test, value =sub(a, b)),
+        Op::Xor(a, b) => simple_op!(test, value =bitxor(a, b)),
         _ => {
             return TestResult::Ignored(test);
         }
     }
     status = d128::status();
+    let value = if test.expected_value.chars().nth(0) == Some('#') {
+        format!("#{:x}", value)
+    } else {
+        format!("{}", value)
+    };
     if value == test.expected_value && status == test.expected_status {
         TestResult::Pass(test)
     } else {
