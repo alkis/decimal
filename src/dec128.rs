@@ -73,6 +73,15 @@ impl fmt::Display for d128 {
     }
 }
 
+impl fmt::LowerHex for d128 {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        for b in self.bytes.iter().rev() {
+            try!(write!(fmt, "{:02x}", b));
+        }
+        Ok(())
+    }
+}
+
 impl PartialEq<d128> for d128 {
     fn eq(&self, other: &d128) -> bool {
         Self::with_ctx(|ctx| {
@@ -258,6 +267,23 @@ impl d128 {
         where F: FnOnce(&mut Context) -> R
     {
         CTX.with(|ctx| f(&mut *ctx.borrow_mut()))
+    }
+
+    pub fn from_hex(s: &str) -> d128 {
+        if s.len() != 32 {
+            Self::from_str("qNaN").unwrap()
+        } else {
+            unsafe {
+                let mut res: d128 = uninitialized();
+                for (i, octet) in s.as_bytes().chunks(2).rev().enumerate() {
+                    res.bytes[i] = match u8::from_str_radix(from_utf8_unchecked(octet), 16) {
+                        Ok(val) => val,
+                        Err(..) => return Self::from_str("qNaN").unwrap(),
+                    };
+                }
+                res
+            }
+        }
     }
 
     pub fn status() -> Status {
