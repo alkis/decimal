@@ -395,17 +395,17 @@ impl<'a> fmt::Display for TestResult<'a> {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             TestResult::Pass(ref test) => {
-                try!(fmt.write_fmt(format_args!("[   PASS  ] {}", test.raw)));
+                try!(write!(fmt, "[   PASS  ] {}", test.raw));
             },
             TestResult::Fail(ref test, ref actual, ref status) => {
                 let exp_flags = format!("{:?}", test.expected_status);
                 let act_flags = format!("{:?}", status);
-                try!(fmt.write_fmt(format_args!("[   FAIL  ] {}\n", test.raw)));
-                try!(fmt.write_fmt(format_args!("\tEXPECTED: {:<43} {:<43}\n", test.expected_value, exp_flags)));
-                try!(fmt.write_fmt(format_args!("\t  ACTUAL: {:<43} {:<43}", actual, act_flags)));
+                try!(write!(fmt, "[   FAIL  ] {}\n", test.raw));
+                try!(write!(fmt, "\tEXPECTED: {:<43} {:<43}\n", test.expected_value, exp_flags));
+                try!(write!(fmt, "\t  ACTUAL: {:<43} {:<43}", actual, act_flags));
             },
             TestResult::Ignored(ref test) => {
-                try!(fmt.write_fmt(format_args!("[ IGNORED ] {}", test.raw)));
+                try!(write!(fmt, "[ IGNORED ] {}", test.raw));
             }
         }
         Ok(())
