@@ -380,7 +380,9 @@ fn read_test(path: &Path) {
             }
         }
     }
-    println!("*** PASSED: {} FAILED: {} IGNORED: {}\n", summary.passed, summary.failed, summary.ignored);
+    let id = path.file_stem().unwrap().to_str().unwrap();
+    println!("*** {:<20} PASSED: {:>5} FAILED: {:>5} IGNORED: {:>5}\n",
+             id, summary.passed, summary.failed, summary.ignored);
 }
 
 enum TestResult<'a> {
