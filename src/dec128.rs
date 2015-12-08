@@ -5,11 +5,12 @@ use context::*;
 use error;
 use libc::{c_char, int32_t, uint8_t, uint32_t};
 use std::cell::RefCell;
-use std::ffi::CString;
+use std::ffi::{CStr, CString};
 use std::fmt;
 use std::mem::uninitialized;
 use std::ops::{Add, Sub, Mul, Div, Rem, Neg, BitAnd, BitOr, BitXor, Not, Shl, Shr};
 use std::str::FromStr;
+use std::str::from_utf8_unchecked;
 use std::num::FpCategory;
 
 thread_local!(static CTX: RefCell<Context> = RefCell::new(d128::ctx()));
@@ -74,8 +75,8 @@ impl fmt::Display for d128 {
         let mut buf = [0 as i8; 43];
         unsafe {
             decQuadToString(self, buf.as_mut().as_mut_ptr());
-            let cstr = CString::from_raw(buf.as_mut().as_mut_ptr());
-            fmt.write_str(cstr.to_str().unwrap())
+            let cstr = CStr::from_ptr(buf.as_ptr());
+            fmt.write_str(from_utf8_unchecked(cstr.to_bytes()))
         }
     }
 }
