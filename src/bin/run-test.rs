@@ -365,7 +365,6 @@ impl TestSummary {
 
 fn read_test(path: &Path) {
     let file = File::open(path);
-    println!("{:?}", file);
     let mut env = Environment::new();
     let mut summary = TestSummary::new();
 
