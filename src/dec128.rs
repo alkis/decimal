@@ -49,22 +49,14 @@ impl FromStr for d128 {
         match CString::new(s) {
             Err(_) => Err(error::Error::Conversion),
             Ok(cstr) => {
-                let mut res: d128;
-                let mut ctx = d128::ctx();
-                unsafe {
-                    res = uninitialized();
-                    decQuadFromString(&mut res, cstr.into_raw(), &mut ctx);
-                }
-                let status = ctx.status();
-                if status.intersects(super::CONVERSION_SYNTAX) {
-                    Err(error::Error::Conversion)
-                } else if status.intersects(super::OVERFLOW) {
-                    Err(error::Error::Overflow)
-                } else if status.intersects(super::UNDERFLOW) {
-                    Err(error::Error::Underflow)
-                } else {
+                Self::with_ctx(|ctx| {
+                    let mut res: d128;
+                    unsafe {
+                        res = uninitialized();
+                        decQuadFromString(&mut res, cstr.as_ptr(), ctx);
+                    }
                     Ok(res)
-                }
+                })
             }
         }
     }
