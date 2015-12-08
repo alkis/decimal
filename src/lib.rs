@@ -20,7 +20,7 @@ pub use context::Context;
 pub use dec128::d128;
 
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Rounding {
     Ceiling = 0,
     Up,
@@ -33,6 +33,7 @@ pub enum Rounding {
 }
 
 #[repr(C)]
+#[derive(Debug, PartialEq)]
 #[allow(dead_code)]
 pub enum Class {
     Snan = 0,
