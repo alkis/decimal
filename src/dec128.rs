@@ -545,22 +545,3 @@ extern {
     fn decQuadIsSubnormal(src: *const d128) -> uint32_t;
     fn decQuadIsZero(src: *const d128) -> uint32_t;
 }
-
-#[cfg(test)]
-mod tests {
-    use super::d128;
-
-    #[test]
-    fn from_str() {
-        use std::str::FromStr;
-        assert!(d128::from_str(".1").is_ok());
-        assert!(d128::from_str("-.1").is_ok());
-        assert!(d128::from_str("0.123456789").is_ok());
-        assert!(d128::from_str("-0.123456789").is_ok());
-        assert!(d128::from_str("0.1e10").is_ok());
-        assert!(d128::from_str("-0.1e10").is_ok());
-        assert!(d128::from_str("0.1e-10").is_ok());
-        assert!(d128::from_str("-0.1e-10").is_ok());
-        assert!(d128::from_str("junk").is_err());
-    }
-}
