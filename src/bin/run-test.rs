@@ -1,6 +1,7 @@
 extern crate decimal;
 
 use decimal::*;
+use std::fmt;
 use std::fs::File;
 use std::path::Path;
 use std::io::BufRead;
@@ -136,10 +137,11 @@ enum Op<'a> {
 
 #[derive(Debug)]
 struct Test<'a> {
+    raw: &'a str,
     id: &'a str,
     op: Op<'a>,
-    result: &'a str,
-    conditions: Status,
+    expected_value: &'a str,
+    expected_status: Status,
 }
 
 #[derive(Debug)]
@@ -193,11 +195,11 @@ fn parse_directive<'a>(s: &mut Scanner<'a>) -> Directive<'a> {
         "dectest" => {
             Directive::Test(s.next())
         }
-        _ => panic!("Cannot parse directive {} {}", s.current(), s.remaining()),
+        _ => panic!("Cannot parse directive {} {}", keyword, s.remaining()),
     }
 }
 
-fn parse_test<'a>(s: &mut Scanner<'a>) -> Test<'a> {
+fn parse_test<'a>(raw: &'a str, s: &mut Scanner<'a>) -> Test<'a> {
     let id = s.current();
     let op = match s.next().to_lowercase().as_ref() {
         "abs" => Op::Abs(s.next()),
@@ -256,7 +258,7 @@ fn parse_test<'a>(s: &mut Scanner<'a>) -> Test<'a> {
     if s.next() != "->" {
         panic!("Missing -> [{} {}]", s.current(), s.remaining());
     }
-    let result = s.next();
+    let value = s.next();
     let mut status = Status::empty();
     loop {
         let cond = s.next().to_lowercase();
@@ -283,10 +285,11 @@ fn parse_test<'a>(s: &mut Scanner<'a>) -> Test<'a> {
         }
     }
     Test {
+        raw: raw,
         id: id,
         op: op,
-        result: result,
-        conditions: status,
+        expected_value: value,
+        expected_status: status,
     }
 }
 
@@ -296,17 +299,189 @@ fn parse_line<'a>(line: &'a str) -> Option<Instr<'a>> {
         "" => None,
         token if token.starts_with("--") => None,
         token if token.ends_with(":") => Some(Instr::Directive(parse_directive(&mut scanner))),
-        _ => Some(Instr::Test(parse_test(&mut scanner))),
+        _ => Some(Instr::Test(parse_test(line, &mut scanner))),
+    }
+}
+
+#[derive(PartialEq)]
+struct Environment {
+    precision: Option<isize>,
+    rounding: Option<Rounding>,
+    max_exponent: Option<isize>,
+    min_exponent: Option<isize>,
+    extended: bool,
+    clamp: bool,
+}
+
+impl Environment {
+    fn new() -> Environment {
+        Environment{
+            precision: None,
+            rounding: None,
+            max_exponent: None,
+            min_exponent: None,
+            extended: true,
+            clamp: false,
+        }
+    }
+
+    fn process_directive<'a>(&mut self, path: &Path, directive: Directive<'a>) {
+        match directive {
+            Directive::Precision(val) => self.precision = Some(val),
+            Directive::Rounding(val) => self.rounding = Some(val),
+            Directive::MaxExponent(val) => self.max_exponent = Some(val),
+            Directive::MinExponent(val) => self.min_exponent = Some(val),
+            Directive::Extended(val) => self.extended = val,
+            Directive::Clamp(val) => self.clamp = val,
+            Directive::Version(_) => {},
+            Directive::Test(val) => {
+                let path = path.with_file_name(val).with_extension("decTest");
+                read_test(&path);
+            }
+        }
+    }
+}
+
+#[derive(Default)]
+struct TestSummary {
+    passed: usize,
+    failed: usize,
+    ignored: usize,
+}
+
+impl TestSummary {
+    fn new() -> TestSummary {
+        TestSummary::default()
+    }
+
+    fn add<'a>(&mut self, result: &'a TestResult) {
+        match *result {
+            TestResult::Pass(..) => self.passed += 1,
+            TestResult::Fail(..) => self.failed += 1,
+            TestResult::Ignored(..) => self.ignored += 1,
+        };
     }
 }
 
 fn read_test(path: &Path) {
     let file = File::open(path);
     println!("{:?}", file);
+    let mut env = Environment::new();
+    let mut summary = TestSummary::new();
+
     for line in BufReader::new(File::open(path).unwrap()).lines() {
         let line = line.unwrap();
-        println!("{}", line);
-        println!("\t{:?}", parse_line(&line));
+        if let Some(instr) = parse_line(&line) {
+            match instr {
+                Instr::Directive(directive) => { env.process_directive(path, directive); },
+                Instr::Test(test) => {
+                    let result = run_test(&env, test);
+                    summary.add(&result);
+                    println!("{}", result);
+                },
+            }
+        }
+    }
+    println!("*** PASSED: {} FAILED: {} IGNORED: {}\n", summary.passed, summary.failed, summary.ignored);
+}
+
+enum TestResult<'a> {
+    Pass(Test<'a>),
+    Fail(Test<'a>, String, Status),
+    Ignored(Test<'a>)
+}
+
+impl<'a> fmt::Display for TestResult<'a> {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            TestResult::Pass(ref test) => {
+                try!(fmt.write_fmt(format_args!("[   PASS  ] {}", test.raw)));
+            },
+            TestResult::Fail(ref test, ref actual, ref status) => {
+                let exp_flags = format!("{:?}", test.expected_status);
+                let act_flags = format!("{:?}", status);
+                try!(fmt.write_fmt(format_args!("[   FAIL  ] {}\n", test.raw)));
+                try!(fmt.write_fmt(format_args!("\tEXPECTED: {:<43} {:<43}\n", test.expected_value, exp_flags)));
+                try!(fmt.write_fmt(format_args!("\t  ACTUAL: {:<43} {:<43}", actual, act_flags)));
+            },
+            TestResult::Ignored(ref test) => {
+                try!(fmt.write_fmt(format_args!("[ IGNORED ] {}", test.raw)));
+            }
+        }
+        Ok(())
+    }
+}
+
+macro_rules! simple_op {
+    ($res:ident = $func:ident($arg0:ident)) => {
+        {
+            let $arg0 = d128::from_str($arg0).expect("Invalid decimal");
+            $res = format!("{}", d128::$func($arg0));
+        }
+    };
+    ($res:ident = $func:ident($arg0:ident, $($arg:ident),+)) => {
+        {
+            let $arg0 = d128::from_str($arg0).expect("Invalid decimal");
+            $(
+                let $arg = d128::from_str($arg).expect("Invalid decimal");
+            )+
+            $res = format!("{}", d128::$func($arg0, $(&$arg),+));
+        }
+    };
+}
+
+fn run_test<'a>(env: &Environment, test: Test<'a>) -> TestResult<'a> {
+    use std::str::FromStr;
+    use std::ops::*;
+
+    let d128_env = Environment{
+        precision: Some(34),
+        rounding: Some(Rounding::HalfEven),
+        max_exponent: Some(6144),
+        min_exponent: Some(-6143),
+        extended: true,
+        clamp: true,
+    };
+    if *env != d128_env {
+        return TestResult::Ignored(test)
+    }
+    d128::zero_status();
+    let value: String;
+    let status: Status;
+
+    match test.op {
+        Op::Abs(a) => simple_op!(value = abs(a)),
+        Op::Add(a, b) => simple_op!(value = add(a, b)),
+        Op::And(a, b) => simple_op!(value = bitand(a, b)),
+        Op::Canonical(a) => simple_op!(value = canonical(a)),
+        Op::Divide(a, b) => simple_op!(value = div(a, b)),
+        Op::Fma(a, b, c) => simple_op!(value = mul_add(a, b, c)),
+        Op::Invert(a) => simple_op!(value = not(a)),
+        Op::LogB(a) => simple_op!(value = logb(a)),
+        Op::Max(a, b) => simple_op!(value = max(a, b)),
+        Op::Min(a, b) => simple_op!(value = min(a, b)),
+        Op::Minus(a) => simple_op!(value = neg(a)),
+        Op::Multiply(a, b) => simple_op!(value = mul(a, b)),
+        Op::NextMinus(a) => simple_op!(value = previous(a)),
+        Op::NextPlus(a) => simple_op!(value = next(a)),
+        Op::NextToward(a, b) => simple_op!(value = towards(a, b)),
+        Op::Or(a, b) => simple_op!(value = bitor(a, b)),
+        Op::Quantize(a, b) => simple_op!(value = quantize(a, b)),
+        Op::Reduce(a) => simple_op!(value = reduce(a)),
+        Op::Remainder(a, b) => simple_op!(value = rem(a, b)),
+        Op::Rotate(a, b) => simple_op!(value = rotate(a, b)),
+        Op::ScaleB(a, b) => simple_op!(value = scaleb(a, b)),
+        Op::Subtract(a, b) => simple_op!(value = sub(a, b)),
+        Op::Xor(a, b) => simple_op!(value = bitxor(a, b)),
+        _ => {
+            return TestResult::Ignored(test);
+        }
+    }
+    status = d128::status();
+    if value == test.expected_value && status == test.expected_status {
+        TestResult::Pass(test)
+    } else {
+        TestResult::Fail(test, value, status)
     }
 }
 
