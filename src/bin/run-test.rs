@@ -11,9 +11,11 @@ fn find_end_quote(s: &str, quote: char) -> Option<usize> {
     match s.find(quote) {
         None => None,
         Some(i) => {
-            match s[i+1..].chars().next() {
+            match s[i + 1..].chars().next() {
                 None => Some(i),
-                Some(c) if c == quote => find_end_quote(&s[i+2..], quote).and_then(|j| { Some(i + 2 + j) }),
+                Some(c) if c == quote => {
+                    find_end_quote(&s[i + 2..], quote).and_then(|j| Some(i + 2 + j))
+                }
                 Some(_) => Some(i),
             }
         }
@@ -181,9 +183,7 @@ fn parse_directive<'a>(s: &mut Scanner<'a>) -> Directive<'a> {
             let val = s.next().parse::<isize>().expect("No value for minexponent");
             Directive::MinExponent(val)
         }
-        "version" => {
-            Directive::Version(s.next())
-        }
+        "version" => Directive::Version(s.next()),
         "extended" => {
             let val = s.next().parse::<isize>().expect("No value for extended");
             Directive::Extended(val != 0)
@@ -192,9 +192,7 @@ fn parse_directive<'a>(s: &mut Scanner<'a>) -> Directive<'a> {
             let val = s.next().parse::<isize>().expect("No value for clamp");
             Directive::Clamp(val != 0)
         }
-        "dectest" => {
-            Directive::Test(s.next())
-        }
+        "dectest" => Directive::Test(s.next()),
         _ => panic!("Cannot parse directive {} {}", keyword, s.remaining()),
     }
 }
@@ -315,7 +313,7 @@ struct Environment {
 
 impl Environment {
     fn new() -> Environment {
-        Environment{
+        Environment {
             precision: None,
             rounding: None,
             max_exponent: None,
@@ -333,7 +331,7 @@ impl Environment {
             Directive::MinExponent(val) => self.min_exponent = Some(val),
             Directive::Extended(val) => self.extended = val,
             Directive::Clamp(val) => self.clamp = val,
-            Directive::Version(_) => {},
+            Directive::Version(_) => {}
             Directive::Test(val) => {
                 let path = path.with_file_name(val).with_extension("decTest");
                 read_test(&path);
@@ -371,24 +369,29 @@ fn read_test(path: &Path) {
         let line = line.unwrap();
         if let Some(instr) = parse_line(&line) {
             match instr {
-                Instr::Directive(directive) => { env.process_directive(path, directive); },
+                Instr::Directive(directive) => {
+                    env.process_directive(path, directive);
+                }
                 Instr::Test(test) => {
                     let result = run_test(&env, test);
                     summary.add(&result);
                     println!("{}", result);
-                },
+                }
             }
         }
     }
     let id = path.file_stem().unwrap().to_str().unwrap();
     println!("*** {:<20} PASSED: {:>5} FAILED: {:>5} IGNORED: {:>5}\n",
-             id, summary.passed, summary.failed, summary.ignored);
+             id,
+             summary.passed,
+             summary.failed,
+             summary.ignored);
 }
 
 enum TestResult<'a> {
     Pass(Test<'a>),
     Fail(Test<'a>, String, Status),
-    Ignored(Test<'a>)
+    Ignored(Test<'a>),
 }
 
 impl<'a> fmt::Display for TestResult<'a> {
@@ -396,14 +399,17 @@ impl<'a> fmt::Display for TestResult<'a> {
         match *self {
             TestResult::Pass(ref test) => {
                 try!(write!(fmt, "[   PASS  ] {}", test.raw));
-            },
+            }
             TestResult::Fail(ref test, ref actual, ref status) => {
                 let exp_flags = format!("{:?}", test.expected_status);
                 let act_flags = format!("{:?}", status);
                 try!(write!(fmt, "[   FAIL  ] {}\n", test.raw));
-                try!(write!(fmt, "\tEXPECTED: {:<43} {:<43}\n", test.expected_value, exp_flags));
+                try!(write!(fmt,
+                            "\tEXPECTED: {:<43} {:<43}\n",
+                            test.expected_value,
+                            exp_flags));
                 try!(write!(fmt, "\t  ACTUAL: {:<43} {:<43}", actual, act_flags));
-            },
+            }
             TestResult::Ignored(ref test) => {
                 try!(write!(fmt, "[ IGNORED ] {}", test.raw));
             }
@@ -445,7 +451,7 @@ macro_rules! simple_op {
 fn run_test<'a>(env: &Environment, test: Test<'a>) -> TestResult<'a> {
     use std::ops::*;
 
-    let d128_env = Environment{
+    let d128_env = Environment {
         precision: Some(34),
         rounding: Some(Rounding::HalfEven),
         max_exponent: Some(6144),
@@ -454,7 +460,7 @@ fn run_test<'a>(env: &Environment, test: Test<'a>) -> TestResult<'a> {
         clamp: true,
     };
     if *env != d128_env {
-        return TestResult::Ignored(test)
+        return TestResult::Ignored(test);
     }
     d128::zero_status();
     let value: d128;
@@ -465,29 +471,31 @@ fn run_test<'a>(env: &Environment, test: Test<'a>) -> TestResult<'a> {
         Op::Add(a, b) => simple_op!(test, value = add(a, b)),
         Op::And(a, b) => simple_op!(test, value = bitand(a, b)),
         Op::Apply(a) => {
-            if a == "#" { return TestResult::Ignored(test) };
+            if a == "#" {
+                return TestResult::Ignored(test);
+            };
             value = parse_operand(a);
         }
         Op::Canonical(a) => simple_op!(test, value = canonical(a)),
         Op::Divide(a, b) => simple_op!(test, value = div(a, b)),
         Op::Fma(a, b, c) => simple_op!(test, value = mul_add(a, b, c)),
         Op::Invert(a) => simple_op!(test, value = not(a)),
-        Op::LogB(a) => simple_op!(test, value =logb(a)),
-        Op::Max(a, b) => simple_op!(test, value =max(a, b)),
-        Op::Min(a, b) => simple_op!(test, value =min(a, b)),
-        Op::Minus(a) => simple_op!(test, value =neg(a)),
-        Op::Multiply(a, b) => simple_op!(test, value =mul(a, b)),
-        Op::NextMinus(a) => simple_op!(test, value =previous(a)),
-        Op::NextPlus(a) => simple_op!(test, value =next(a)),
-        Op::NextToward(a, b) => simple_op!(test, value =towards(a, b)),
-        Op::Or(a, b) => simple_op!(test, value =bitor(a, b)),
-        Op::Quantize(a, b) => simple_op!(test, value =quantize(a, b)),
-        Op::Reduce(a) => simple_op!(test, value =reduce(a)),
-        Op::Remainder(a, b) => simple_op!(test, value =rem(a, b)),
-        Op::Rotate(a, b) => simple_op!(test, value =rotate(a, b)),
-        Op::ScaleB(a, b) => simple_op!(test, value =scaleb(a, b)),
-        Op::Subtract(a, b) => simple_op!(test, value =sub(a, b)),
-        Op::Xor(a, b) => simple_op!(test, value =bitxor(a, b)),
+        Op::LogB(a) => simple_op!(test, value = logb(a)),
+        Op::Max(a, b) => simple_op!(test, value = max(a, b)),
+        Op::Min(a, b) => simple_op!(test, value = min(a, b)),
+        Op::Minus(a) => simple_op!(test, value = neg(a)),
+        Op::Multiply(a, b) => simple_op!(test, value = mul(a, b)),
+        Op::NextMinus(a) => simple_op!(test, value = previous(a)),
+        Op::NextPlus(a) => simple_op!(test, value = next(a)),
+        Op::NextToward(a, b) => simple_op!(test, value = towards(a, b)),
+        Op::Or(a, b) => simple_op!(test, value = bitor(a, b)),
+        Op::Quantize(a, b) => simple_op!(test, value = quantize(a, b)),
+        Op::Reduce(a) => simple_op!(test, value = reduce(a)),
+        Op::Remainder(a, b) => simple_op!(test, value = rem(a, b)),
+        Op::Rotate(a, b) => simple_op!(test, value = rotate(a, b)),
+        Op::ScaleB(a, b) => simple_op!(test, value = scaleb(a, b)),
+        Op::Subtract(a, b) => simple_op!(test, value = sub(a, b)),
+        Op::Xor(a, b) => simple_op!(test, value = bitxor(a, b)),
         _ => {
             return TestResult::Ignored(test);
         }
