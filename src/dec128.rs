@@ -329,14 +329,14 @@ impl d128 {
         })
     }
 
-    pub fn max<'a>(mut self, other: &'a d128) -> d128 {
+    pub fn max(mut self, other: &d128) -> d128 {
         Self::with_ctx(|ctx| {
             unsafe { decQuadMax(&mut self, &self, other, ctx) };
             self
         })
     }
 
-    pub fn min<'a>(mut self, other: &'a d128) -> d128 {
+    pub fn min(mut self, other: &d128) -> d128 {
         Self::with_ctx(|ctx| {
             unsafe { decQuadMin(&mut self, &self, other, ctx) };
             self
@@ -357,14 +357,14 @@ impl d128 {
         })
     }
 
-    pub fn towards<'a>(mut self, other: &'a d128) -> d128 {
+    pub fn towards(mut self, other: &d128) -> d128 {
         Self::with_ctx(|ctx| {
             unsafe { decQuadNextToward(&mut self, &self, other, ctx) };
             self
         })
     }
 
-    pub fn quantize<'a>(mut self, other: &'a d128) -> d128 {
+    pub fn quantize<'a>(mut self, other: &d128) -> d128 {
         Self::with_ctx(|ctx| {
             unsafe { decQuadQuantize(&mut self, &self, other, ctx) };
             self
@@ -379,14 +379,14 @@ impl d128 {
     }
 
     // TODO(alkis): Make amount isize.
-    pub fn rotate<'a>(mut self, amount: &'a d128) -> d128 {
+    pub fn rotate(mut self, amount: &d128) -> d128 {
         Self::with_ctx(|ctx| {
             unsafe { decQuadRotate(&mut self, &self, amount, ctx) };
             self
         })
     }
 
-    pub fn scaleb<'a>(mut self, other: &'a d128) -> d128 {
+    pub fn scaleb(mut self, other: &d128) -> d128 {
         Self::with_ctx(|ctx| {
             unsafe { decQuadScaleB(&mut self, &self, other, ctx) };
             self
