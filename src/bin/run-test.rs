@@ -263,6 +263,7 @@ fn parse_test<'a>(raw: &'a str, s: &mut Scanner<'a>) -> Test<'a> {
         if cond.is_empty() {
             break;
         }
+        // We only support IEEE flags.
         status = status |
                  match cond.as_ref() {
             "conversion_syntax" => CONVERSION_SYNTAX,
@@ -273,11 +274,11 @@ fn parse_test<'a>(raw: &'a str, s: &mut Scanner<'a>) -> Test<'a> {
             "inexact" => INEXACT,
             "invalid_context" => INVALID_CONTEXT,
             "invalid_operation" => INVALID_OPERATION,
-            "lost_digits" => LOST_DIGITS,
+            "lost_digits" => Status::empty(), // LOST_DIGITS,
             "overflow" => OVERFLOW,
-            "clamped" => CLAMPED,
-            "rounded" => ROUNDED,
-            "subnormal" => SUBNORMAL,
+            "clamped" => Status::empty(), // CLAMPED,
+            "rounded" => Status::empty(), // ROUNDED,
+            "subnormal" => Status::empty(), // SUBNORMAL,
             "underflow" => UNDERFLOW,
             _ => panic!("Cannot parse condition {}", s.current()),
         }
