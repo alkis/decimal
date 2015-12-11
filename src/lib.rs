@@ -14,7 +14,6 @@ macro_rules! d128 {
 
 mod context;
 mod dec128;
-mod error;
 
 pub use dec128::d128;
 

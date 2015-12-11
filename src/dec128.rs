@@ -3,7 +3,6 @@ use super::Status;
 use super::Rounding;
 
 use context::*;
-use error;
 use libc::{c_char, int32_t, uint8_t, uint32_t};
 use std::cell::RefCell;
 use std::ffi::{CStr, CString};
@@ -45,21 +44,20 @@ impl From<u32> for d128 {
 }
 
 impl FromStr for d128 {
-    type Err = error::Error;
-    fn from_str(s: &str) -> error::Result<Self> {
-        match CString::new(s) {
-            Err(_) => Err(error::Error::Conversion),
-            Ok(cstr) => {
-                Self::with_context(|ctx| {
-                    let mut res: d128;
-                    unsafe {
-                        res = uninitialized();
-                        decQuadFromString(&mut res, cstr.as_ptr(), ctx);
-                    }
-                    Ok(res)
-                })
+    type Err = ();
+    fn from_str(s: &str) -> Result<Self, ()> {
+        let cstr = match CString::new(s) {
+            Err(..) => CString::new("qNaN").unwrap(),
+            Ok(cstr) => cstr,
+        };
+        Self::with_context(|ctx| {
+            let mut res: d128;
+            unsafe {
+                res = uninitialized();
+                decQuadFromString(&mut res, cstr.as_ptr(), ctx);
             }
-        }
+            Ok(res)
+        })
     }
 }
 
