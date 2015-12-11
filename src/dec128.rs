@@ -502,7 +502,6 @@ impl d128 {
     }
 }
 
-#[link(name = "decNumber")]
 extern {
     // Context.
     fn decContextDefault(ctx: *mut Context, kind: uint32_t) -> *mut Context;
