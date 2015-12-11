@@ -401,9 +401,9 @@ impl d128 {
         })
     }
 
-    /// If both `self` and `other`  are numeric (not NaNs) this returns the smaller of the two ///
-    /// (compared using total ordering, to give a well-defined result). If either (but not both of) /// ///
-    /// is a quiet NaN then the other argument is the result; otherwise NaNs are handled as /// for ///
+    /// If both `self` and `other`  are numeric (not NaNs) this returns the smaller of the two
+    /// (compared using total ordering, to give a well-defined result). If either (but not both of)
+    /// is a quiet NaN then the other argument is the result; otherwise NaNs are handled as for
     /// arithmetic operations.
     pub fn min(mut self, other: &d128) -> d128 {
         Self::with_context(|ctx| {
