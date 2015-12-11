@@ -1,5 +1,6 @@
 use super::Class;
 use super::Status;
+use super::Rounding;
 
 use context::*;
 use error;
@@ -13,10 +14,10 @@ use std::str::FromStr;
 use std::str::from_utf8_unchecked;
 use std::num::FpCategory;
 
-thread_local!(static CTX: RefCell<Context> = RefCell::new(d128::ctx()));
+thread_local!(static CTX: RefCell<Context> = RefCell::new(d128::default_context()));
 
 #[repr(C)]
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 // decQuad
 pub struct d128 {
     bytes: [uint8_t; 16],
@@ -49,7 +50,7 @@ impl FromStr for d128 {
         match CString::new(s) {
             Err(_) => Err(error::Error::Conversion),
             Ok(cstr) => {
-                Self::with_ctx(|ctx| {
+                Self::with_context(|ctx| {
                     let mut res: d128;
                     unsafe {
                         res = uninitialized();
@@ -62,13 +63,36 @@ impl FromStr for d128 {
     }
 }
 
+impl Into<i32> for d128 {
+    fn into(self) -> i32 {
+        Self::with_context(|ctx| unsafe { decQuadToInt32(&self, ctx, ctx.rounding) })
+    }
+}
+
+impl Into<u32> for d128 {
+    fn into(self) -> u32 {
+        Self::with_context(|ctx| unsafe { decQuadToUInt32(&self, ctx, ctx.rounding) })
+    }
+}
+
 impl fmt::Display for d128 {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         let mut buf = [0 as i8; 43];
         unsafe {
             decQuadToString(self, buf.as_mut().as_mut_ptr());
             let cstr = CStr::from_ptr(buf.as_ptr());
-            fmt.write_str(from_utf8_unchecked(cstr.to_bytes()))
+            fmt.pad(from_utf8_unchecked(cstr.to_bytes()))
+        }
+    }
+}
+
+impl fmt::LowerExp for d128 {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        let mut buf = [0 as i8; 43];
+        unsafe {
+            decQuadToEngString(self, buf.as_mut().as_mut_ptr());
+            let cstr = CStr::from_ptr(buf.as_ptr());
+            fmt.pad(from_utf8_unchecked(cstr.to_bytes()))
         }
     }
 }
@@ -84,37 +108,20 @@ impl fmt::LowerHex for d128 {
 
 impl PartialEq<d128> for d128 {
     fn eq(&self, other: &d128) -> bool {
-        Self::with_ctx(|ctx| {
-            let mut res: d128;
-            unsafe {
-                res = uninitialized();
-                decQuadCompare(&mut res, self, other, ctx);
-            }
-            res.is_zero()
-        })
+        self.compare(other).is_zero()
     }
 }
 
 impl PartialOrd<d128> for d128 {
     fn partial_cmp(&self, other: &d128) -> Option<::std::cmp::Ordering> {
-        Self::with_ctx(|ctx| {
-            let mut res: d128;
-            unsafe {
-                res = uninitialized();
-                decQuadCompare(&mut res, self, other, ctx);
-            }
-            if res.is_nan() {
-                None
-            } else if res.is_zero() {
-                Some(::std::cmp::Ordering::Equal)
-            } else if res.is_positive() {
-                Some(::std::cmp::Ordering::Greater)
-            } else if res.is_negative() {
-                Some(::std::cmp::Ordering::Less)
-            } else {
-                unreachable!()
-            }
-        })
+        use std::cmp::Ordering;
+        match self.compare(other) {
+            v if v.is_nan() => None,
+            v if v.is_zero() => Some(Ordering::Equal),
+            v if v.is_positive() => Some(Ordering::Greater),
+            v if v.is_negative() => Some(Ordering::Less),
+            _ => unreachable!(),
+        }
     }
 }
 
@@ -122,7 +129,7 @@ impl<'a> Add<&'a d128> for d128 {
     type Output = d128;
 
     fn add(mut self, other: &'a d128) -> d128 {
-        Self::with_ctx(|ctx| {
+        Self::with_context(|ctx| {
             unsafe { decQuadAdd(&mut self, &self, other, ctx) };
             self
         })
@@ -133,7 +140,7 @@ impl<'a> Sub<&'a d128> for d128 {
     type Output = d128;
 
     fn sub(mut self, other: &'a d128) -> d128 {
-        Self::with_ctx(|ctx| {
+        Self::with_context(|ctx| {
             unsafe { decQuadSubtract(&mut self, &self, other, ctx) };
             self
         })
@@ -145,7 +152,7 @@ impl<'a> Mul<&'a d128> for d128 {
     type Output = d128;
 
     fn mul(mut self, other: &'a d128) -> d128 {
-        Self::with_ctx(|ctx| {
+        Self::with_context(|ctx| {
             unsafe { decQuadMultiply(&mut self, &self, other, ctx) };
             self
         })
@@ -156,7 +163,7 @@ impl<'a> Div<&'a d128> for d128 {
     type Output = d128;
 
     fn div(mut self, other: &'a d128) -> d128 {
-        Self::with_ctx(|ctx| {
+        Self::with_context(|ctx| {
             unsafe { decQuadDivide(&mut self, &self, other, ctx) };
             self
         })
@@ -167,7 +174,7 @@ impl<'a> Rem<&'a d128> for d128 {
     type Output = d128;
 
     fn rem(mut self, other: &'a d128) -> d128 {
-        Self::with_ctx(|ctx| {
+        Self::with_context(|ctx| {
             unsafe { decQuadRemainder(&mut self, &self, other, ctx) };
             self
         })
@@ -178,7 +185,7 @@ impl Neg for d128 {
     type Output = d128;
 
     fn neg(mut self) -> d128 {
-        Self::with_ctx(|ctx| {
+        Self::with_context(|ctx| {
             unsafe { decQuadMinus(&mut self, &self, ctx) };
             self
         })
@@ -189,7 +196,7 @@ impl<'a> BitAnd<&'a d128> for d128 {
     type Output = d128;
 
     fn bitand(mut self, other: &'a d128) -> d128 {
-        Self::with_ctx(|ctx| {
+        Self::with_context(|ctx| {
             unsafe { decQuadAnd(&mut self, &self, other, ctx) };
             self
         })
@@ -200,7 +207,7 @@ impl<'a> BitOr<&'a d128> for d128 {
     type Output = d128;
 
     fn bitor(mut self, other: &'a d128) -> d128 {
-        Self::with_ctx(|ctx| {
+        Self::with_context(|ctx| {
             unsafe { decQuadOr(&mut self, &self, other, ctx) };
             self
         })
@@ -211,7 +218,7 @@ impl<'a> BitXor<&'a d128> for d128 {
     type Output = d128;
 
     fn bitxor(mut self, other: &'a d128) -> d128 {
-        Self::with_ctx(|ctx| {
+        Self::with_context(|ctx| {
             unsafe { decQuadXor(&mut self, &self, other, ctx) };
             self
         })
@@ -223,7 +230,7 @@ impl Shl<usize> for d128 {
 
     fn shl(mut self, amount: usize) -> d128 {
         let shift = d128::from(amount as u32);
-        Self::with_ctx(|ctx| {
+        Self::with_context(|ctx| {
             unsafe { decQuadShift(&mut self, &self, &shift, ctx) };
             self
         })
@@ -235,7 +242,7 @@ impl Shr<usize> for d128 {
 
     fn shr(mut self, amount: usize) -> d128 {
         let shift = -d128::from(amount as u32);
-        Self::with_ctx(|ctx| {
+        Self::with_context(|ctx| {
             unsafe { decQuadShift(&mut self, &self, &shift, ctx) };
             self
         })
@@ -246,7 +253,7 @@ impl Not for d128 {
     type Output = d128;
 
     fn not(mut self) -> d128 {
-        Self::with_ctx(|ctx| {
+        Self::with_context(|ctx| {
             unsafe { decQuadInvert(&mut self, &self, ctx) };
             self
         })
@@ -254,19 +261,32 @@ impl Not for d128 {
 }
 
 impl d128 {
-    // Context.
-    fn ctx() -> Context {
+    fn default_context() -> Context {
         unsafe {
             let mut res: Context = uninitialized();
             decContextDefault(&mut res, 128);
+            // assert_eq!(res.digits, 34);
+            // assert_eq!(res.emin, -6143);
+            // assert_eq!(res.emax, 6144);
+            // assert_eq!(res.rounding, Rounding::HalfEven);
+            // assert_eq!(res.status, 0);
+            // assert_eq!(res.clamp, 1);
             res
         }
     }
 
-    fn with_ctx<F, R>(f: F) -> R
+    fn with_context<F, R>(f: F) -> R
         where F: FnOnce(&mut Context) -> R
     {
-        CTX.with(|ctx| f(&mut *ctx.borrow_mut()))
+        CTX.with(|ctx| f(&mut ctx.borrow_mut()))
+    }
+
+    pub fn get_status() -> Status {
+        Self::with_context(|ctx| Status::from_bits_truncate(ctx.status))
+    }
+
+    pub fn set_status(status: Status) {
+        Self::with_context(|ctx| ctx.status = status.bits());
     }
 
     pub fn from_hex(s: &str) -> d128 {
@@ -286,18 +306,6 @@ impl d128 {
         }
     }
 
-    pub fn status() -> Status {
-        Self::with_ctx(|ctx| ctx.status())
-    }
-
-    pub fn zero_status() {
-        Self::with_ctx(|ctx| ctx.zero_status())
-    }
-
-    pub fn clear_status(status: Status) {
-        Self::with_ctx(|ctx| ctx.clear_status(status))
-    }
-
     // Utilities and conversions, extractors, etc.
     pub fn zero() -> d128 {
         unsafe {
@@ -309,87 +317,109 @@ impl d128 {
 
     // Computational.
     pub fn abs(mut self) -> d128 {
-        Self::with_ctx(|ctx| {
+        Self::with_context(|ctx| {
             unsafe { decQuadAbs(&mut self, &self, ctx) };
             self
         })
     }
 
     pub fn mul_add<'a, 'b>(mut self, a: &'a d128, b: &'b d128) -> d128 {
-        Self::with_ctx(|ctx| {
+        Self::with_context(|ctx| {
             unsafe { decQuadFMA(&mut self, &self, a, b, ctx) };
             self
         })
     }
 
     pub fn logb(mut self) -> d128 {
-        Self::with_ctx(|ctx| {
+        Self::with_context(|ctx| {
             unsafe { decQuadLogB(&mut self, &self, ctx) };
             self
         })
     }
 
     pub fn max(mut self, other: &d128) -> d128 {
-        Self::with_ctx(|ctx| {
+        Self::with_context(|ctx| {
             unsafe { decQuadMax(&mut self, &self, other, ctx) };
             self
         })
     }
 
     pub fn min(mut self, other: &d128) -> d128 {
-        Self::with_ctx(|ctx| {
+        Self::with_context(|ctx| {
             unsafe { decQuadMin(&mut self, &self, other, ctx) };
             self
         })
     }
 
     pub fn next(mut self) -> d128 {
-        Self::with_ctx(|ctx| {
+        Self::with_context(|ctx| {
             unsafe { decQuadNextPlus(&mut self, &self, ctx) };
             self
         })
     }
 
     pub fn previous(mut self) -> d128 {
-        Self::with_ctx(|ctx| {
+        Self::with_context(|ctx| {
             unsafe { decQuadNextMinus(&mut self, &self, ctx) };
             self
         })
     }
 
     pub fn towards(mut self, other: &d128) -> d128 {
-        Self::with_ctx(|ctx| {
+        Self::with_context(|ctx| {
             unsafe { decQuadNextToward(&mut self, &self, other, ctx) };
             self
         })
     }
 
     pub fn quantize<'a>(mut self, other: &d128) -> d128 {
-        Self::with_ctx(|ctx| {
+        Self::with_context(|ctx| {
             unsafe { decQuadQuantize(&mut self, &self, other, ctx) };
             self
         })
     }
 
     pub fn reduce(mut self) -> d128 {
-        Self::with_ctx(|ctx| {
+        Self::with_context(|ctx| {
             unsafe { decQuadReduce(&mut self, &self, ctx) };
             self
         })
     }
 
-    // TODO(alkis): Make amount isize.
     pub fn rotate(mut self, amount: &d128) -> d128 {
-        Self::with_ctx(|ctx| {
+        Self::with_context(|ctx| {
             unsafe { decQuadRotate(&mut self, &self, amount, ctx) };
             self
         })
     }
 
     pub fn scaleb(mut self, other: &d128) -> d128 {
-        Self::with_ctx(|ctx| {
+        Self::with_context(|ctx| {
             unsafe { decQuadScaleB(&mut self, &self, other, ctx) };
             self
+        })
+    }
+
+    // Comparisons.
+    pub fn compare(&self, other: &d128) -> d128 {
+        Self::with_context(|ctx| {
+            let mut res: d128;
+            unsafe {
+                res = uninitialized();
+                decQuadCompare(&mut res, self, other, ctx);
+            }
+            res
+        })
+    }
+
+    pub fn compare_total(&self, other: &d128) -> d128 {
+        Self::with_context(|ctx| {
+            let mut res: d128;
+            unsafe {
+                res = uninitialized();
+                decQuadCompareTotal(&mut res, self, other, ctx);
+            }
+            res
         })
     }
 
@@ -479,7 +509,10 @@ extern {
     fn decQuadFromInt32(res: *mut d128, src: int32_t) -> *mut d128;
     fn decQuadFromString(res: *mut d128, s: *const c_char, ctx: *mut Context) -> *mut d128;
     fn decQuadFromUInt32(res: *mut d128, src: uint32_t) -> *mut d128;
-    fn decQuadToString(res: *const d128, s: *mut c_char) -> *mut c_char;
+    fn decQuadToString(src: *const d128, s: *mut c_char) -> *mut c_char;
+    fn decQuadToInt32(src: *const d128, ctx: *mut Context, round: Rounding) -> int32_t;
+    fn decQuadToUInt32(src: *const d128, ctx: *mut Context, round: Rounding) -> uint32_t;
+    fn decQuadToEngString(res: *const d128, s: *mut c_char) -> *mut c_char;
     fn decQuadZero(res: *mut d128) -> *mut d128;
     // Computational.
     fn decQuadAbs(res: *mut d128, src: *const d128, ctx: *mut Context) -> *mut d128;
@@ -552,6 +585,11 @@ extern {
                       b: *const d128,
                       ctx: *mut Context)
                       -> *mut d128;
+    fn decQuadCompareTotal(res: *mut d128,
+                           a: *const d128,
+                           b: *const d128,
+                           ctx: *mut Context)
+                           -> *mut d128;
     // Copies.
     fn decQuadCanonical(res: *mut d128, src: *const d128) -> *mut d128;
     // Non-computational.

@@ -428,12 +428,22 @@ fn parse_operand(s: &str) -> d128 {
     }
 }
 
+fn format_result<'a>(value: d128, test: &Test<'a>) -> String {
+    if test.expected_value.chars().nth(0) == Some('#') {
+        format!("#{:x}", value)
+    } else if let Op::ToEng(..) = test.op {
+        format!("{:e}", value)
+    } else {
+        format!("{}", value)
+    }
+}
+
 macro_rules! simple_op {
     ($test:ident, $res:ident = $func:ident($arg0:ident)) => {
         {
             if $arg0 == "#" { return TestResult::Ignored($test); }
             let $arg0 = parse_operand($arg0);
-            $res = d128::$func($arg0);
+            $res = format_result(d128::$func($arg0), &$test);
         }
     };
     ($test:ident, $res:ident = $func:ident($arg0:ident, $($arg:ident),+)) => {
@@ -444,7 +454,7 @@ macro_rules! simple_op {
                 if $arg == "#" { return TestResult::Ignored($test); }
                 let $arg = parse_operand($arg);
             )+
-            $res = d128::$func($arg0, $(&$arg),+);
+            $res = format_result(d128::$func($arg0, $(&$arg),+), &$test);
         }
     };
 }
@@ -460,13 +470,14 @@ fn run_test<'a>(env: &Environment, test: Test<'a>) -> TestResult<'a> {
         extended: true,
         clamp: true,
     };
+
     if *env != d128_env {
         return TestResult::Ignored(test);
     }
-    d128::zero_status();
-    let value: d128;
-    let status: Status;
 
+    let value: String;
+    let status: Status;
+    d128::set_status(Status::empty());
     match test.op {
         Op::Abs(a) => simple_op!(test, value = abs(a)),
         Op::Add(a, b) => simple_op!(test, value = add(a, b)),
@@ -474,10 +485,22 @@ fn run_test<'a>(env: &Environment, test: Test<'a>) -> TestResult<'a> {
         Op::Apply(a) => {
             if a == "#" {
                 return TestResult::Ignored(test);
-            };
-            value = parse_operand(a);
+            }
+            value = format_result(parse_operand(a), &test);
         }
         Op::Canonical(a) => simple_op!(test, value = canonical(a)),
+        Op::Compare(a, b) => {
+            if a == "#" || b == "#" {
+                return TestResult::Ignored(test);
+            }
+            value = format_result(d128::compare(&parse_operand(a), &parse_operand(b)), &test);
+        }
+        Op::CompareTotal(a, b) => {
+            if a == "#" || b == "#" {
+                return TestResult::Ignored(test);
+            }
+            value = format_result(d128::compare_total(&parse_operand(a), &parse_operand(b)), &test);
+        }
         Op::Divide(a, b) => simple_op!(test, value = div(a, b)),
         Op::Fma(a, b, c) => simple_op!(test, value = mul_add(a, b, c)),
         Op::Invert(a) => simple_op!(test, value = not(a)),
@@ -496,17 +519,24 @@ fn run_test<'a>(env: &Environment, test: Test<'a>) -> TestResult<'a> {
         Op::Rotate(a, b) => simple_op!(test, value = rotate(a, b)),
         Op::ScaleB(a, b) => simple_op!(test, value = scaleb(a, b)),
         Op::Subtract(a, b) => simple_op!(test, value = sub(a, b)),
+        Op::ToEng(a) => {
+            if a == "#" {
+                return TestResult::Ignored(test);
+            }
+            value = format_result(parse_operand(a), &test);
+        }
+        Op::ToSci(a) => {
+            if a == "#" {
+                return TestResult::Ignored(test);
+            }
+            value = format_result(parse_operand(a), &test);
+        }
         Op::Xor(a, b) => simple_op!(test, value = bitxor(a, b)),
         _ => {
             return TestResult::Ignored(test);
         }
     }
-    status = d128::status();
-    let value = if test.expected_value.chars().nth(0) == Some('#') {
-        format!("#{:x}", value)
-    } else {
-        format!("{}", value)
-    };
+    status = d128::get_status();
     if value == test.expected_value && status == test.expected_status {
         TestResult::Pass(test)
     } else {

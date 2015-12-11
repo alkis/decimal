@@ -16,11 +16,10 @@ mod context;
 mod dec128;
 mod error;
 
-pub use context::Context;
 pub use dec128::d128;
 
 #[repr(C)]
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Rounding {
     Ceiling = 0,
     Up,
@@ -33,7 +32,7 @@ pub enum Rounding {
 }
 
 #[repr(C)]
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 #[allow(dead_code)]
 pub enum Class {
     Snan = 0,
@@ -49,7 +48,7 @@ pub enum Class {
 }
 
 bitflags! {
-    flags Status: u32 {
+    flags Status: libc::uint32_t {
         const CONVERSION_SYNTAX    = 0x00000001,
         const DIVISION_BY_ZERO     = 0x00000002,
         const DIVISION_IMPOSSIBLE  = 0x00000004,
