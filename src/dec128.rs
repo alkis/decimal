@@ -428,17 +428,20 @@ impl d128 {
     }
 
     // Non-computational.
+    pub fn class(&self) -> Class {
+        unsafe { decQuadClass(self) }
+    }
+
     pub fn classify(&self) -> FpCategory {
-        use ::std::num::FpCategory::*;
+        use std::num::FpCategory::*;
         use super::Class::*;
-        unsafe {
-            match decQuadClass(self) {
-                Qnan | Snan => Nan,
-                PosInf | NegInf => Infinite,
-                PosZero | NegZero => Zero,
-                PosNormal | NegNormal => Normal,
-                PosSubnormal | NegSubnormal => Subnormal,
-            }
+
+        match self.class() {
+            Qnan | Snan => Nan,
+            PosInf | NegInf => Infinite,
+            PosZero | NegZero => Zero,
+            PosNormal | NegNormal => Normal,
+            PosSubnormal | NegSubnormal => Subnormal,
         }
     }
 
