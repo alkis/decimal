@@ -499,7 +499,8 @@ fn run_test<'a>(env: &Environment, test: Test<'a>) -> TestResult<'a> {
             if a == "#" || b == "#" {
                 return TestResult::Ignored(test);
             }
-            value = format_result(d128::compare_total(&parse_operand(a), &parse_operand(b)), &test);
+            value = format_result(d128::compare_total(&parse_operand(a), &parse_operand(b)),
+                                  &test);
         }
         Op::Divide(a, b) => simple_op!(test, value = div(a, b)),
         Op::Fma(a, b, c) => simple_op!(test, value = mul_add(a, b, c)),
