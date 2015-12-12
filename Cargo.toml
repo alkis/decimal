@@ -12,6 +12,10 @@ license = "Apache-2.0"
 [dependencies]
 bitflags = "~0.3"
 libc = "~0.2"
+rustc-serialize = { optional = true, version = "~0.3" }
+
+[features]
+default = ["rustc-serialize"]
 
 [build-dependencies]
 gcc = "~0.3"

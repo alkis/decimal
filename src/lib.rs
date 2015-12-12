@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate bitflags;
 extern crate libc;
+extern crate rustc_serialize;
 
 #[macro_export]
 /// A macro to construct d128 literals.

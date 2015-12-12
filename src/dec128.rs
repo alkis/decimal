@@ -4,6 +4,7 @@ use super::Rounding;
 
 use context::*;
 use libc::{c_char, int32_t, uint8_t, uint32_t};
+use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 use std::cell::RefCell;
 use std::ffi::{CStr, CString};
 use std::fmt;
@@ -20,6 +21,21 @@ thread_local!(static CTX: RefCell<Context> = RefCell::new(d128::default_context(
 /// A 128-bit decimal floating point type.
 pub struct d128 {
     bytes: [uint8_t; 16],
+}
+
+#[cfg(feature = "rustc-serialize")]
+impl Decodable for d128 {
+    fn decode<D: Decoder>(d: &mut D) -> Result<Self, D::Error> {
+        let s = try!(d.read_str());
+        Ok(Self::from_str(&s).expect("unreachable"))
+    }
+}
+
+#[cfg(feature = "rustc-serialize")]
+impl Encodable for d128 {
+    fn encode<E: Encoder>(&self, e: &mut E) -> Result<(), E::Error> {
+        e.emit_str(&format!("{}", self))
+    }
 }
 
 /// Converts an i32 to d128. The result is exact and no error is possible.
@@ -732,4 +748,24 @@ extern {
     fn decQuadIsSigned(src: *const d128) -> uint32_t;
     fn decQuadIsSubnormal(src: *const d128) -> uint32_t;
     fn decQuadIsZero(src: *const d128) -> uint32_t;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use rustc_serialize::json;
+
+    #[cfg(feature = "rustc-serialize")]
+    #[test]
+    fn test_rustc_serialize() {
+        #[derive(RustcDecodable, RustcEncodable, PartialEq, Debug)]
+        struct Test {
+            price: d128,
+        };
+        let a = Test { price: d128!(12.3456) };
+        assert_eq!(json::encode(&a).unwrap(), "{\"price\":\"12.3456\"}");
+        let b = json::decode("{\"price\":\"12.3456\"}").unwrap();
+        assert_eq!(a, b);
+    }
 }
