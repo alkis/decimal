@@ -167,7 +167,8 @@ impl PartialOrd<d128> for d128 {
 }
 
 macro_rules! ffi_unary_op {
-    (impl $op:ident, $method:ident, $ffi:ident for $t:ident) => {
+    ($(#[$attr:meta])* impl $op:ident, $method:ident, $ffi:ident for $t:ident) => {
+        $(#[$attr])*
         impl $op for $t {
             type Output = $t;
 
@@ -191,7 +192,8 @@ macro_rules! ffi_unary_op {
 }
 
 macro_rules! ffi_binary_op {
-    (impl $op:ident, $method:ident, $ffi:ident for $t:ident) => {
+    ($(#[$attr:meta])* impl $op:ident, $method:ident, $ffi:ident for $t:ident) => {
+        $(#[$attr])*
         impl $op<$t> for $t {
             type Output = $t;
 
@@ -238,21 +240,25 @@ ffi_binary_op!(impl Add, add, decQuadAdd for d128);
 ffi_binary_op!(impl Sub, sub, decQuadSubtract for d128);
 ffi_binary_op!(impl Mul, mul, decQuadMultiply for d128);
 ffi_binary_op!(impl Div, div, decQuadDivide for d128);
-/// The operands must be zero or positive, an integer (finite with zero exponent) and comprise only
-/// zeros and/or ones; if not, INVALID_OPERATION is set.
-ffi_binary_op!(impl BitAnd, bitand, decQuadAnd for d128);
-/// The operands must be zero or positive, an integer (finite with zero exponent) and comprise only
-/// zeros and/or ones; if not, INVALID_OPERATION is set.
-ffi_binary_op!(impl BitOr, bitor, decQuadOr for d128);
-/// The operands must be zero or positive, an integer (finite with zero exponent) and comprise only
-/// zeros and/or ones; if not, INVALID_OPERATION is set.
-ffi_binary_op!(impl BitXor, bitxor, decQuadXor for d128);
+ffi_binary_op!(
+    /// The operands must be zero or positive, an integer (finite with zero exponent) and comprise
+    /// only zeros and/or ones; if not, INVALID_OPERATION is set.
+    impl BitAnd, bitand, decQuadAnd for d128);
+ffi_binary_op!(
+    /// The operands must be zero or positive, an integer (finite with zero exponent) and comprise
+    /// only zeros and/or ones; if not, INVALID_OPERATION is set.
+    impl BitOr, bitor, decQuadOr for d128);
+ffi_binary_op!(
+    /// The operands must be zero or positive, an integer (finite with zero exponent) and comprise
+    /// only zeros and/or ones; if not, INVALID_OPERATION is set.
+    impl BitXor, bitxor, decQuadXor for d128);
 ffi_binary_op!(impl Rem, rem, decQuadRemainder for d128);
 
 ffi_unary_op!(impl Neg, neg, decQuadMinus for d128);
-/// The operand must be zero or positive, an integer (finite with zero exponent) and comprise only
-/// zeros and/or ones; if not, INVALID_OPERATION is set.
-ffi_unary_op!(impl Not, not, decQuadInvert for d128);
+ffi_unary_op!(
+    /// The operand must be zero or positive, an integer (finite with zero exponent) and comprise
+    /// only zeros and/or ones; if not, INVALID_OPERATION is set.
+    impl Not, not, decQuadInvert for d128);
 
 /// The result is `self` with the digits of the coefficient shifted to the left without adjusting
 /// the exponent or the sign of `self`. Any digits ‘shifted in’ from the right will be 0. `amount`
