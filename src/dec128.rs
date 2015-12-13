@@ -166,6 +166,30 @@ impl PartialOrd<d128> for d128 {
     }
 }
 
+macro_rules! ffi_unary_op {
+    (impl $op:ident, $method:ident, $ffi:ident for $t:ident) => {
+        impl $op for $t {
+            type Output = $t;
+
+            fn $method(mut self) -> $t {
+                $t::with_context(|ctx| {
+                    unsafe { *$ffi(&mut self, &self, ctx)}
+                })
+            }
+        }
+
+        impl<'a> $op for &'a $t {
+            type Output = $t;
+
+            fn $method(self) -> $t {
+                $t::with_context(|ctx| {
+                    unsafe { let mut res: $t = uninitialized(); *$ffi(&mut res, self, ctx)}
+                })
+            }
+        }
+    }
+}
+
 macro_rules! ffi_binary_op {
     (impl $op:ident, $method:ident, $ffi:ident for $t:ident) => {
         impl $op<$t> for $t {
@@ -225,17 +249,10 @@ ffi_binary_op!(impl BitOr, bitor, decQuadOr for d128);
 ffi_binary_op!(impl BitXor, bitxor, decQuadXor for d128);
 ffi_binary_op!(impl Rem, rem, decQuadRemainder for d128);
 
-impl Neg for d128 {
-    type Output = d128;
-
-    fn neg(mut self) -> d128 {
-        Self::with_context(|ctx| {
-            unsafe { decQuadMinus(&mut self, &self, ctx) };
-            self
-        })
-    }
-}
-
+ffi_unary_op!(impl Neg, neg, decQuadMinus for d128);
+/// The operand must be zero or positive, an integer (finite with zero exponent) and comprise only
+/// zeros and/or ones; if not, INVALID_OPERATION is set.
+ffi_unary_op!(impl Not, not, decQuadInvert for d128);
 
 /// The result is `self` with the digits of the coefficient shifted to the left without adjusting
 /// the exponent or the sign of `self`. Any digits ‘shifted in’ from the right will be 0. `amount`
@@ -266,19 +283,6 @@ impl Shr<usize> for d128 {
         let shift = -d128::from(amount as u32);
         Self::with_context(|ctx| {
             unsafe { decQuadShift(&mut self, &self, &shift, ctx) };
-            self
-        })
-    }
-}
-
-/// The operand must be zero or positive, an integer (finite with zero exponent) and comprise only
-/// zeros and/or ones; if not, INVALID_OPERATION is set.
-impl Not for d128 {
-    type Output = d128;
-
-    fn not(mut self) -> d128 {
-        Self::with_context(|ctx| {
-            unsafe { decQuadInvert(&mut self, &self, ctx) };
             self
         })
     }
@@ -742,7 +746,13 @@ mod tests {
     }
 
     #[test]
-    fn ops() {
+    fn unary_op() {
+        assert_eq!(d128!(-1.1), -d128!(1.1));
+        assert_eq!(d128!(-1.1), -&d128!(1.1));
+    }
+
+    #[test]
+    fn binary_op() {
         assert_eq!(d128!(3.33), d128!(1.11) + d128!(2.22));
         assert_eq!(d128!(3.33), &d128!(1.11) + d128!(2.22));
         assert_eq!(d128!(3.33), d128!(1.11) + &d128!(2.22));
