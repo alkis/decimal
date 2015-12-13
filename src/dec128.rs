@@ -43,8 +43,7 @@ impl From<i32> for d128 {
     fn from(val: i32) -> d128 {
         unsafe {
             let mut res: d128 = uninitialized();
-            decQuadFromInt32(&mut res, val);
-            res
+            *decQuadFromInt32(&mut res, val)
         }
     }
 }
@@ -52,12 +51,10 @@ impl From<i32> for d128 {
 /// Converts an u32 to d128. The result is exact and no error is possible.
 impl From<u32> for d128 {
     fn from(val: u32) -> d128 {
-        let mut res: d128;
         unsafe {
-            res = uninitialized();
-            decQuadFromUInt32(&mut res, val);
-        };
-        res
+            let mut res: d128 = uninitialized();
+            *decQuadFromUInt32(&mut res, val)
+        }
     }
 }
 
@@ -320,14 +317,7 @@ impl d128 {
     fn default_context() -> Context {
         unsafe {
             let mut res: Context = uninitialized();
-            decContextDefault(&mut res, 128);
-            // assert_eq!(res.digits, 34);
-            // assert_eq!(res.emin, -6143);
-            // assert_eq!(res.emax, 6144);
-            // assert_eq!(res.rounding, Rounding::HalfEven);
-            // assert_eq!(res.status, 0);
-            // assert_eq!(res.clamp, 1);
-            res
+            *decContextDefault(&mut res, 128)
         }
     }
 
@@ -372,8 +362,7 @@ impl d128 {
     pub fn zero() -> d128 {
         unsafe {
             let mut res = uninitialized();
-            decQuadZero(&mut res);
-            res
+            *decQuadZero(&mut res)
         }
     }
 
@@ -382,8 +371,7 @@ impl d128 {
     /// Returns the absolute value of `self`.
     pub fn abs(mut self) -> d128 {
         Self::with_context(|ctx| {
-            unsafe { decQuadAbs(&mut self, &self, ctx) };
-            self
+            unsafe { *decQuadAbs(&mut self, &self, ctx) }
         })
     }
 
@@ -391,8 +379,7 @@ impl d128 {
     /// is carried out first and is exact, so this operation has only the one, final, rounding.
     pub fn mul_add<'a, 'b>(mut self, a: &'a d128, b: &'b d128) -> d128 {
         Self::with_context(|ctx| {
-            unsafe { decQuadFMA(&mut self, &self, a, b, ctx) };
-            self
+            unsafe { *decQuadFMA(&mut self, &self, a, b, ctx) }
         })
     }
 
@@ -405,8 +392,7 @@ impl d128 {
     /// operations.
     pub fn logb(mut self) -> d128 {
         Self::with_context(|ctx| {
-            unsafe { decQuadLogB(&mut self, &self, ctx) };
-            self
+            unsafe { *decQuadLogB(&mut self, &self, ctx) }
         })
     }
 
@@ -416,8 +402,7 @@ impl d128 {
     /// arithmetic operations.
     pub fn max(mut self, other: &d128) -> d128 {
         Self::with_context(|ctx| {
-            unsafe { decQuadMax(&mut self, &self, other, ctx) };
-            self
+            unsafe { *decQuadMax(&mut self, &self, other, ctx) }
         })
     }
 
@@ -427,8 +412,7 @@ impl d128 {
     /// arithmetic operations.
     pub fn min(mut self, other: &d128) -> d128 {
         Self::with_context(|ctx| {
-            unsafe { decQuadMin(&mut self, &self, other, ctx) };
-            self
+            unsafe { *decQuadMin(&mut self, &self, other, ctx) }
         })
     }
 
@@ -436,8 +420,7 @@ impl d128 {
     /// for nextUp. The only status possible is `INVALID_OPERATION` (from an sNaN).
     pub fn next(mut self) -> d128 {
         Self::with_context(|ctx| {
-            unsafe { decQuadNextPlus(&mut self, &self, ctx) };
-            self
+            unsafe { *decQuadNextPlus(&mut self, &self, ctx) }
         })
     }
 
@@ -445,8 +428,7 @@ impl d128 {
     /// for nextDown. The only status possible is `INVALID_OPERATION` (from an sNaN).
     pub fn previous(mut self) -> d128 {
         Self::with_context(|ctx| {
-            unsafe { decQuadNextMinus(&mut self, &self, ctx) };
-            self
+            unsafe { *decQuadNextMinus(&mut self, &self, ctx) }
         })
     }
 
@@ -459,8 +441,7 @@ impl d128 {
     /// normal  (finite, non-zero, and not subnormal) no flags are set.
     pub fn towards(mut self, other: &d128) -> d128 {
         Self::with_context(|ctx| {
-            unsafe { decQuadNextToward(&mut self, &self, other, ctx) };
-            self
+            unsafe { *decQuadNextToward(&mut self, &self, other, ctx) }
         })
     }
 
@@ -469,8 +450,7 @@ impl d128 {
     /// example to round a monetary quantity to cents).
     pub fn quantize(mut self, other: &d128) -> d128 {
         Self::with_context(|ctx| {
-            unsafe { decQuadQuantize(&mut self, &self, other, ctx) };
-            self
+            unsafe { *decQuadQuantize(&mut self, &self, other, ctx) }
         })
     }
 
@@ -481,8 +461,7 @@ impl d128 {
     /// an sNaN. If `self` is a zero the result exponent is 0.
     pub fn reduce(mut self) -> d128 {
         Self::with_context(|ctx| {
-            unsafe { decQuadReduce(&mut self, &self, ctx) };
-            self
+            unsafe { *decQuadReduce(&mut self, &self, ctx) }
         })
     }
 
@@ -494,8 +473,7 @@ impl d128 {
     /// unless `amount` is invalid or an operand is an sNaN.
     pub fn rotate(mut self, amount: &d128) -> d128 {
         Self::with_context(|ctx| {
-            unsafe { decQuadRotate(&mut self, &self, amount, ctx) };
-            self
+            unsafe { *decQuadRotate(&mut self, &self, amount, ctx) }
         })
     }
 
@@ -504,8 +482,7 @@ impl d128 {
     /// `logb`. Underflow and overflow might occur. NaNs propagate as usual.
     pub fn scaleb(mut self, other: &d128) -> d128 {
         Self::with_context(|ctx| {
-            unsafe { decQuadScaleB(&mut self, &self, other, ctx) };
-            self
+            unsafe { *decQuadScaleB(&mut self, &self, other, ctx) }
         })
     }
 
@@ -517,12 +494,10 @@ impl d128 {
     /// only if `self` or `other` is a NaN.
     pub fn compare(&self, other: &d128) -> d128 {
         Self::with_context(|ctx| {
-            let mut res: d128;
             unsafe {
-                res = uninitialized();
-                decQuadCompare(&mut res, self, other, ctx);
+                let mut res: d128 = uninitialized();
+                *decQuadCompare(&mut res, self, other, ctx)
             }
-            res
         })
     }
 
@@ -531,12 +506,10 @@ impl d128 {
     /// Infinity and NaN). The result will be –1, 0, or 1.
     pub fn compare_total(&self, other: &d128) -> d128 {
         Self::with_context(|ctx| {
-            let mut res: d128;
             unsafe {
-                res = uninitialized();
-                decQuadCompareTotal(&mut res, self, other, ctx);
+                let mut res: d128 = uninitialized();
+                *decQuadCompareTotal(&mut res, self, other, ctx)
             }
-            res
         })
     }
 
@@ -544,8 +517,7 @@ impl d128 {
 
     /// Returns `self` ensuring that the encoding is canonical.
     pub fn canonical(mut self) -> d128 {
-        unsafe { decQuadCanonical(&mut self, &self) };
-        self
+        unsafe { *decQuadCanonical(&mut self, &self) }
     }
 
     // Non-computational.
