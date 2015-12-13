@@ -166,61 +166,64 @@ impl PartialOrd<d128> for d128 {
     }
 }
 
-impl<'a> Add<&'a d128> for d128 {
-    type Output = d128;
+macro_rules! ffi_binary_op {
+    (impl $op:ident, $method:ident, $ffi:ident for $t:ident) => {
+        impl $op<$t> for $t {
+            type Output = $t;
 
-    fn add(mut self, other: &'a d128) -> d128 {
-        Self::with_context(|ctx| {
-            unsafe { decQuadAdd(&mut self, &self, other, ctx) };
-            self
-        })
+            fn $method(mut self, other: $t) -> $t {
+                $t::with_context(|ctx| {
+                    unsafe { *$ffi(&mut self, &self, &other, ctx)}
+                })
+            }
+        }
+
+        impl<'a> $op<$t> for &'a $t {
+            type Output = $t;
+
+            fn $method(self, mut other: $t) -> $t {
+                $t::with_context(|ctx| {
+                    unsafe { *$ffi(&mut other, self, &other, ctx) }
+                })
+            }
+        }
+
+        impl<'a> $op<&'a$t> for $t {
+            type Output = $t;
+
+            fn $method(mut self, other: &'a $t) -> $t {
+                $t::with_context(|ctx| {
+                    unsafe { *$ffi(&mut self, &self, other, ctx) }
+                })
+            }
+        }
+
+        impl<'a, 'b> $op<&'a $t> for &'b $t {
+            type Output = $t;
+
+            fn $method(self, other: &'a $t) -> $t {
+                $t::with_context(|ctx| {
+                    unsafe { let mut res: $t = uninitialized(); *$ffi(&mut res, self, other, ctx) }
+                })
+            }
+        }
     }
 }
 
-impl<'a> Sub<&'a d128> for d128 {
-    type Output = d128;
-
-    fn sub(mut self, other: &'a d128) -> d128 {
-        Self::with_context(|ctx| {
-            unsafe { decQuadSubtract(&mut self, &self, other, ctx) };
-            self
-        })
-    }
-
-}
-
-impl<'a> Mul<&'a d128> for d128 {
-    type Output = d128;
-
-    fn mul(mut self, other: &'a d128) -> d128 {
-        Self::with_context(|ctx| {
-            unsafe { decQuadMultiply(&mut self, &self, other, ctx) };
-            self
-        })
-    }
-}
-
-impl<'a> Div<&'a d128> for d128 {
-    type Output = d128;
-
-    fn div(mut self, other: &'a d128) -> d128 {
-        Self::with_context(|ctx| {
-            unsafe { decQuadDivide(&mut self, &self, other, ctx) };
-            self
-        })
-    }
-}
-
-impl<'a> Rem<&'a d128> for d128 {
-    type Output = d128;
-
-    fn rem(mut self, other: &'a d128) -> d128 {
-        Self::with_context(|ctx| {
-            unsafe { decQuadRemainder(&mut self, &self, other, ctx) };
-            self
-        })
-    }
-}
+ffi_binary_op!(impl Add, add, decQuadAdd for d128);
+ffi_binary_op!(impl Sub, sub, decQuadSubtract for d128);
+ffi_binary_op!(impl Mul, mul, decQuadMultiply for d128);
+ffi_binary_op!(impl Div, div, decQuadDivide for d128);
+/// The operands must be zero or positive, an integer (finite with zero exponent) and comprise only
+/// zeros and/or ones; if not, INVALID_OPERATION is set.
+ffi_binary_op!(impl BitAnd, bitand, decQuadAnd for d128);
+/// The operands must be zero or positive, an integer (finite with zero exponent) and comprise only
+/// zeros and/or ones; if not, INVALID_OPERATION is set.
+ffi_binary_op!(impl BitOr, bitor, decQuadOr for d128);
+/// The operands must be zero or positive, an integer (finite with zero exponent) and comprise only
+/// zeros and/or ones; if not, INVALID_OPERATION is set.
+ffi_binary_op!(impl BitXor, bitxor, decQuadXor for d128);
+ffi_binary_op!(impl Rem, rem, decQuadRemainder for d128);
 
 impl Neg for d128 {
     type Output = d128;
@@ -233,44 +236,6 @@ impl Neg for d128 {
     }
 }
 
-/// The operands must be zero or positive, an integer (finite with zero exponent) and comprise only
-/// zeros and/or ones; if not, INVALID_OPERATION is set.
-impl<'a> BitAnd<&'a d128> for d128 {
-    type Output = d128;
-
-    fn bitand(mut self, other: &'a d128) -> d128 {
-        Self::with_context(|ctx| {
-            unsafe { decQuadAnd(&mut self, &self, other, ctx) };
-            self
-        })
-    }
-}
-
-/// The operands must be zero or positive, an integer (finite with zero exponent) and comprise only
-/// zeros and/or ones; if not, INVALID_OPERATION is set.
-impl<'a> BitOr<&'a d128> for d128 {
-    type Output = d128;
-
-    fn bitor(mut self, other: &'a d128) -> d128 {
-        Self::with_context(|ctx| {
-            unsafe { decQuadOr(&mut self, &self, other, ctx) };
-            self
-        })
-    }
-}
-
-/// The operands must be zero or positive, an integer (finite with zero exponent) and comprise only
-/// zeros and/or ones; if not, INVALID_OPERATION is set.
-impl<'a> BitXor<&'a d128> for d128 {
-    type Output = d128;
-
-    fn bitxor(mut self, other: &'a d128) -> d128 {
-        Self::with_context(|ctx| {
-            unsafe { decQuadXor(&mut self, &self, other, ctx) };
-            self
-        })
-    }
-}
 
 /// The result is `self` with the digits of the coefficient shifted to the left without adjusting
 /// the exponent or the sign of `self`. Any digits ‘shifted in’ from the right will be 0. `amount`
@@ -774,5 +739,13 @@ mod tests {
         assert_eq!(json::encode(&a).unwrap(), "{\"price\":\"12.3456\"}");
         let b = json::decode("{\"price\":\"12.3456\"}").unwrap();
         assert_eq!(a, b);
+    }
+
+    #[test]
+    fn ops() {
+        assert_eq!(d128!(3.33), d128!(1.11) + d128!(2.22));
+        assert_eq!(d128!(3.33), &d128!(1.11) + d128!(2.22));
+        assert_eq!(d128!(3.33), d128!(1.11) + &d128!(2.22));
+        assert_eq!(d128!(3.33), &d128!(1.11) + &d128!(2.22));
     }
 }
