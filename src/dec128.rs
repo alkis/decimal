@@ -59,7 +59,9 @@ impl From<u32> for d128 {
 }
 
 impl AsRef<d128> for d128 {
-    fn as_ref(&self) -> &d128 { &self }
+    fn as_ref(&self) -> &d128 {
+        &self
+    }
 }
 
 /// Converts a string to d128. The length of the coefficient and the size of the exponent are
@@ -374,9 +376,7 @@ impl d128 {
 
     /// Returns the absolute value of `self`.
     pub fn abs(mut self) -> d128 {
-        d128::with_context(|ctx| {
-            unsafe { *decQuadAbs(&mut self, &self, ctx) }
-        })
+        d128::with_context(|ctx| unsafe { *decQuadAbs(&mut self, &self, ctx) })
     }
 
     /// Calculates the fused multiply-add `self` × `a` + `b` and returns the result. The multiply
@@ -395,9 +395,7 @@ impl d128 {
     /// is used. If `self` is 1, the result is 0. NaNs are handled (propagated) as for arithmetic
     /// operations.
     pub fn logb(mut self) -> d128 {
-        d128::with_context(|ctx| {
-            unsafe { *decQuadLogB(&mut self, &self, ctx) }
-        })
+        d128::with_context(|ctx| unsafe { *decQuadLogB(&mut self, &self, ctx) })
     }
 
     /// If both `self` and `other` are numeric (not NaNs) this returns the larger of the two
@@ -405,9 +403,7 @@ impl d128 {
     /// is a quiet NaN then the other argument is the result; otherwise NaNs are handled as for
     /// arithmetic operations.
     pub fn max<O: AsRef<d128>>(mut self, other: O) -> d128 {
-        d128::with_context(|ctx| {
-            unsafe { *decQuadMax(&mut self, &self, other.as_ref(), ctx) }
-        })
+        d128::with_context(|ctx| unsafe { *decQuadMax(&mut self, &self, other.as_ref(), ctx) })
     }
 
     /// If both `self` and `other`  are numeric (not NaNs) this returns the smaller of the two
@@ -415,25 +411,19 @@ impl d128 {
     /// is a quiet NaN then the other argument is the result; otherwise NaNs are handled as for
     /// arithmetic operations.
     pub fn min<O: AsRef<d128>>(mut self, other: O) -> d128 {
-        d128::with_context(|ctx| {
-            unsafe { *decQuadMin(&mut self, &self, other.as_ref(), ctx) }
-        })
+        d128::with_context(|ctx| unsafe { *decQuadMin(&mut self, &self, other.as_ref(), ctx) })
     }
 
     /// Returns the ‘next’ d128 to `self` in the direction of +Infinity according to IEEE 754 rules
     /// for nextUp. The only status possible is `INVALID_OPERATION` (from an sNaN).
     pub fn next(mut self) -> d128 {
-        d128::with_context(|ctx| {
-            unsafe { *decQuadNextPlus(&mut self, &self, ctx) }
-        })
+        d128::with_context(|ctx| unsafe { *decQuadNextPlus(&mut self, &self, ctx) })
     }
 
     /// Returns the ‘next’ d128 to `self` in the direction of –Infinity according to IEEE 754 rules
     /// for nextDown. The only status possible is `INVALID_OPERATION` (from an sNaN).
     pub fn previous(mut self) -> d128 {
-        d128::with_context(|ctx| {
-            unsafe { *decQuadNextMinus(&mut self, &self, ctx) }
-        })
+        d128::with_context(|ctx| unsafe { *decQuadNextMinus(&mut self, &self, ctx) })
     }
 
     /// Returns the ‘next’ d128 to `self` in the direction of `other` according to proposed IEEE
@@ -453,9 +443,7 @@ impl d128 {
     /// the same value but rounded or padded if necessary to have the same exponent as `other`, for
     /// example to round a monetary quantity to cents).
     pub fn quantize<O: AsRef<d128>>(mut self, other: O) -> d128 {
-        d128::with_context(|ctx| {
-            unsafe { *decQuadQuantize(&mut self, &self, other.as_ref(), ctx) }
-        })
+        d128::with_context(|ctx| unsafe { *decQuadQuantize(&mut self, &self, other.as_ref(), ctx) })
     }
 
     /// Returns a copy of `self` with its coefficient reduced to its shortest possible form without
@@ -464,9 +452,7 @@ impl d128 {
     /// negative number). Infinities and NaNs are unchanged and no status is set unless `self` is
     /// an sNaN. If `self` is a zero the result exponent is 0.
     pub fn reduce(mut self) -> d128 {
-        d128::with_context(|ctx| {
-            unsafe { *decQuadReduce(&mut self, &self, ctx) }
-        })
+        d128::with_context(|ctx| unsafe { *decQuadReduce(&mut self, &self, ctx) })
     }
 
     /// The result is a copy of `self` with the digits of the coefficient rotated to the left (if
@@ -476,18 +462,14 @@ impl d128 {
     /// usual. If `self` is infinite the result is Infinity of the same sign. No status is set
     /// unless `amount` is invalid or an operand is an sNaN.
     pub fn rotate<O: AsRef<d128>>(mut self, amount: O) -> d128 {
-        d128::with_context(|ctx| {
-            unsafe { *decQuadRotate(&mut self, &self, amount.as_ref(), ctx) }
-        })
+        d128::with_context(|ctx| unsafe { *decQuadRotate(&mut self, &self, amount.as_ref(), ctx) })
     }
 
     /// This calculates `self` × 10<sup>`other`</sup> and returns the result. `other` must be an
     /// integer (finite with exponent=0) in the range ±2 × (34 + 6144), typically resulting from
     /// `logb`. Underflow and overflow might occur. NaNs propagate as usual.
     pub fn scaleb<O: AsRef<d128>>(mut self, other: O) -> d128 {
-        d128::with_context(|ctx| {
-            unsafe { *decQuadScaleB(&mut self, &self, other.as_ref(), ctx) }
-        })
+        d128::with_context(|ctx| unsafe { *decQuadScaleB(&mut self, &self, other.as_ref(), ctx) })
     }
 
     // Comparisons.
