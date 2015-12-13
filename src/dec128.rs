@@ -270,9 +270,20 @@ impl Shl<usize> for d128 {
 
     fn shl(mut self, amount: usize) -> d128 {
         let shift = d128::from(amount as u32);
-        Self::with_context(|ctx| {
-            unsafe { decQuadShift(&mut self, &self, &shift, ctx) };
-            self
+        d128::with_context(|ctx| unsafe { *decQuadShift(&mut self, &self, &shift, ctx) })
+    }
+}
+
+impl<'a> Shl<usize> for &'a d128 {
+    type Output = d128;
+
+    fn shl(self, amount: usize) -> d128 {
+        let shift = d128::from(amount as u32);
+        d128::with_context(|ctx| {
+            unsafe {
+                let mut res: d128 = uninitialized();
+                *decQuadShift(&mut res, self, &shift, ctx)
+            }
         })
     }
 }
@@ -287,9 +298,20 @@ impl Shr<usize> for d128 {
 
     fn shr(mut self, amount: usize) -> d128 {
         let shift = -d128::from(amount as u32);
-        Self::with_context(|ctx| {
-            unsafe { decQuadShift(&mut self, &self, &shift, ctx) };
-            self
+        d128::with_context(|ctx| unsafe { *decQuadShift(&mut self, &self, &shift, ctx) })
+    }
+}
+
+impl<'a> Shr<usize> for &'a d128 {
+    type Output = d128;
+
+    fn shr(self, amount: usize) -> d128 {
+        let shift = -d128::from(amount as u32);
+        d128::with_context(|ctx| {
+            unsafe {
+                let mut res: d128 = uninitialized();
+                *decQuadShift(&mut res, self, &shift, ctx)
+            }
         })
     }
 }
