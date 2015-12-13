@@ -1,4 +1,4 @@
-## 0.1.2
+## 0.1.2 (2015-12-13)
 
 - add operator overloads
 
