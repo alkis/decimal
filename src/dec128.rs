@@ -649,7 +649,7 @@ impl d128 {
     }
 }
 
-extern {
+extern "C" {
     // Context.
     fn decContextDefault(ctx: *mut Context, kind: uint32_t) -> *mut Context;
     // Utilities and conversions, extractors, etc.
