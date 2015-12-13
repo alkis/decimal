@@ -439,22 +439,13 @@ fn format_result<'a>(value: d128, test: &Test<'a>) -> String {
 }
 
 macro_rules! simple_op {
-    ($test:ident, $res:ident = $func:ident($arg0:ident)) => {
+    ($test:ident, $res:ident = $func:ident($($arg:ident),+)) => {
         {
-            if $arg0 == "#" { return TestResult::Ignored($test); }
-            let $arg0 = parse_operand($arg0);
-            $res = format_result(d128::$func($arg0), &$test);
-        }
-    };
-    ($test:ident, $res:ident = $func:ident($arg0:ident, $($arg:ident),+)) => {
-        {
-            if $arg0 == "#" { return TestResult::Ignored($test); }
-            let $arg0 = parse_operand($arg0);
             $(
                 if $arg == "#" { return TestResult::Ignored($test); }
                 let $arg = parse_operand($arg);
             )+
-            $res = format_result(d128::$func($arg0, $(&$arg),+), &$test);
+            $res = format_result(d128::$func($($arg),+), &$test);
         }
     };
 }
