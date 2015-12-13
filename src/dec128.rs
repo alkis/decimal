@@ -58,6 +58,10 @@ impl From<u32> for d128 {
     }
 }
 
+impl AsRef<d128> for d128 {
+    fn as_ref(&self) -> &d128 { &self }
+}
+
 /// Converts a string to d128. The length of the coefficient and the size of the exponent are
 /// checked by this routine, so rounding will be applied if necessary, and this may set status
 /// flags (`UNDERFLOW`, `OVERFLOW`) will be reported, or rounding applied, as necessary. There is
@@ -377,9 +381,9 @@ impl d128 {
 
     /// Calculates the fused multiply-add `self` × `a` + `b` and returns the result. The multiply
     /// is carried out first and is exact, so this operation has only the one, final, rounding.
-    pub fn mul_add<'a, 'b>(mut self, a: &'a d128, b: &'b d128) -> d128 {
+    pub fn mul_add<O: AsRef<d128>>(mut self, a: O, b: O) -> d128 {
         d128::with_context(|ctx| {
-            unsafe { *decQuadFMA(&mut self, &self, a, b, ctx) }
+            unsafe { *decQuadFMA(&mut self, &self, a.as_ref(), b.as_ref(), ctx) }
         })
     }
 
@@ -400,9 +404,9 @@ impl d128 {
     /// (compared using total ordering, to give a well-defined result). If either (but not both of)
     /// is a quiet NaN then the other argument is the result; otherwise NaNs are handled as for
     /// arithmetic operations.
-    pub fn max(mut self, other: &d128) -> d128 {
+    pub fn max<O: AsRef<d128>>(mut self, other: O) -> d128 {
         d128::with_context(|ctx| {
-            unsafe { *decQuadMax(&mut self, &self, other, ctx) }
+            unsafe { *decQuadMax(&mut self, &self, other.as_ref(), ctx) }
         })
     }
 
@@ -410,9 +414,9 @@ impl d128 {
     /// (compared using total ordering, to give a well-defined result). If either (but not both of)
     /// is a quiet NaN then the other argument is the result; otherwise NaNs are handled as for
     /// arithmetic operations.
-    pub fn min(mut self, other: &d128) -> d128 {
+    pub fn min<O: AsRef<d128>>(mut self, other: O) -> d128 {
         d128::with_context(|ctx| {
-            unsafe { *decQuadMin(&mut self, &self, other, ctx) }
+            unsafe { *decQuadMin(&mut self, &self, other.as_ref(), ctx) }
         })
     }
 
@@ -439,18 +443,18 @@ impl d128 {
     /// and rounding towards +Infinity (or –Infinity) is returned, depending on whether `other` is
     /// larger  (or smaller) than `self`. The addition will set flags, except that if the result is
     /// normal  (finite, non-zero, and not subnormal) no flags are set.
-    pub fn towards(mut self, other: &d128) -> d128 {
+    pub fn towards<O: AsRef<d128>>(mut self, other: O) -> d128 {
         d128::with_context(|ctx| {
-            unsafe { *decQuadNextToward(&mut self, &self, other, ctx) }
+            unsafe { *decQuadNextToward(&mut self, &self, other.as_ref(), ctx) }
         })
     }
 
     /// Returns `self` set to have the same quantum as `other`, if possible (that is, numerically
     /// the same value but rounded or padded if necessary to have the same exponent as `other`, for
     /// example to round a monetary quantity to cents).
-    pub fn quantize(mut self, other: &d128) -> d128 {
+    pub fn quantize<O: AsRef<d128>>(mut self, other: O) -> d128 {
         d128::with_context(|ctx| {
-            unsafe { *decQuadQuantize(&mut self, &self, other, ctx) }
+            unsafe { *decQuadQuantize(&mut self, &self, other.as_ref(), ctx) }
         })
     }
 
@@ -471,18 +475,18 @@ impl d128 {
     /// finite integer (with exponent=0) in the range -34 through +34. NaNs are propagated as
     /// usual. If `self` is infinite the result is Infinity of the same sign. No status is set
     /// unless `amount` is invalid or an operand is an sNaN.
-    pub fn rotate(mut self, amount: &d128) -> d128 {
+    pub fn rotate<O: AsRef<d128>>(mut self, amount: O) -> d128 {
         d128::with_context(|ctx| {
-            unsafe { *decQuadRotate(&mut self, &self, amount, ctx) }
+            unsafe { *decQuadRotate(&mut self, &self, amount.as_ref(), ctx) }
         })
     }
 
     /// This calculates `self` × 10<sup>`other`</sup> and returns the result. `other` must be an
     /// integer (finite with exponent=0) in the range ±2 × (34 + 6144), typically resulting from
     /// `logb`. Underflow and overflow might occur. NaNs propagate as usual.
-    pub fn scaleb(mut self, other: &d128) -> d128 {
+    pub fn scaleb<O: AsRef<d128>>(mut self, other: O) -> d128 {
         d128::with_context(|ctx| {
-            unsafe { *decQuadScaleB(&mut self, &self, other, ctx) }
+            unsafe { *decQuadScaleB(&mut self, &self, other.as_ref(), ctx) }
         })
     }
 
@@ -492,11 +496,11 @@ impl d128 {
     /// or NaN (unordered); –1 indicates that `self` is less than `other`, 0 indicates that they
     /// are numerically equal, and 1 indicates that `self` is greater than `other`. NaN is returned
     /// only if `self` or `other` is a NaN.
-    pub fn compare(&self, other: &d128) -> d128 {
+    pub fn compare<O: AsRef<d128>>(&self, other: O) -> d128 {
         d128::with_context(|ctx| {
             unsafe {
                 let mut res: d128 = uninitialized();
-                *decQuadCompare(&mut res, self, other, ctx)
+                *decQuadCompare(&mut res, self, other.as_ref(), ctx)
             }
         })
     }
@@ -504,11 +508,11 @@ impl d128 {
     /// Compares `self` and `other` using the IEEE 754 total ordering (which takes into account the
     /// exponent) and returns the result. No status is set (a signaling NaN is ordered between
     /// Infinity and NaN). The result will be –1, 0, or 1.
-    pub fn compare_total(&self, other: &d128) -> d128 {
+    pub fn compare_total<O: AsRef<d128>>(&self, other: O) -> d128 {
         d128::with_context(|ctx| {
             unsafe {
                 let mut res: d128 = uninitialized();
-                *decQuadCompareTotal(&mut res, self, other, ctx)
+                *decQuadCompareTotal(&mut res, self, other.as_ref(), ctx)
             }
         })
     }
@@ -757,5 +761,11 @@ mod tests {
         assert_eq!(d128!(3.33), &d128!(1.11) + d128!(2.22));
         assert_eq!(d128!(3.33), d128!(1.11) + &d128!(2.22));
         assert_eq!(d128!(3.33), &d128!(1.11) + &d128!(2.22));
+    }
+
+    #[test]
+    fn as_ref_operand() {
+        assert_eq!(d128!(1.1), d128!(1.1).min(d128!(2.2)));
+        assert_eq!(d128!(1.1), d128!(1.1).min(&d128!(2.2)));
     }
 }
