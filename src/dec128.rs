@@ -26,11 +26,9 @@ pub struct d128 {
 #[repr(C)]
 #[derive(Clone, Copy)]
 struct DecNumber {
-    digits: i32,      // Count of digits in the coefficient; >0
-    exponent: i32,    // Unadjusted exponent, unbiased, in
-                      // range: -1999999997 through 999999999
-    bits: u8,         // Indicator bits (see above)
-                      // Coefficient, from least significant unit
+    digits: i32,
+    exponent: i32,
+    bits: u8,
     lsu: [u16; 12],
 }
 
