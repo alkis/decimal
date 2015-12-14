@@ -29,6 +29,9 @@ struct DecNumber {
     digits: i32,
     exponent: i32,
     bits: u8,
+    // DECPUN = 3 because this is the fastest for conversion between decNumber and decQuad
+    // DECNUMDIGITS = 34 because we use decQuad only
+    // 12 = ((DECNUMDIGITS+DECDPUN-1)/DECDPUN)
     lsu: [u16; 12],
 }
 
@@ -435,21 +438,14 @@ impl d128 {
         d128::with_context(|ctx| unsafe { *decQuadNextMinus(&mut self, &self, ctx) })
     }
     
-    /// Returns self ^ exp
-    /// 
-    /// Mathematical function restrictions apply (see above); a NaN is
-    /// returned with Invalid_operation if a restriction is violated.
-    /// 
-    /// However, if 1999999997<=B<=999999999 and B is an integer then the
-    /// restrictions on A and the context are relaxed to the usual bounds,
-    /// for compatibility with the earlier (integer power only) version
-    /// of this function.                                                  
-    /// 
-    /// When B is an integer, the result may be exact, even if rounded.
-    /// 
-    /// The final result is rounded according to the context; it will
-    /// almost always be correctly rounded, but may be up to 1 ulp in
-    /// error in rare cases.
+    /// The number is set to the result of raising `self` to the power of `exp`, rounded if necessary
+    /// using the settings in the context. Results will be exact when `exp` has an integral value and the
+    /// result does not need to be rounded, and also will be exact in certain special cases, such as when
+    /// `self` is a zero (see the arithmetic specification for details). Inexact results will always be
+    /// full precision, and will almost always be correctly rounded, but may be up to 1 ulp (unit in last
+    /// place) in error in rare cases. This is a mathematical function; the 106 restrictions on precision
+    /// and range apply as described above, except that the normal range of values and context is allowed
+    /// if `exp` has an integral value in the range –1999999997 through +999999999.
     pub fn pow<O: AsRef<d128>>(mut self, exp: O) -> d128 {
         d128::with_context(|ctx| unsafe {
             let mut num_self: DecNumber = uninitialized();
