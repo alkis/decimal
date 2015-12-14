@@ -437,19 +437,20 @@ impl d128 {
     pub fn previous(mut self) -> d128 {
         d128::with_context(|ctx| unsafe { *decQuadNextMinus(&mut self, &self, ctx) })
     }
-    
-    /// The number is set to the result of raising `self` to the power of `exp`, rounded if necessary
-    /// using the settings in the context. Results will be exact when `exp` has an integral value and the
-    /// result does not need to be rounded, and also will be exact in certain special cases, such as when
-    /// `self` is a zero (see the arithmetic specification for details). Inexact results will always be
-    /// full precision, and will almost always be correctly rounded, but may be up to 1 ulp (unit in last
-    /// place) in error in rare cases. This is a mathematical function; the 106 restrictions on precision
-    /// and range apply as described above, except that the normal range of values and context is allowed
-    /// if `exp` has an integral value in the range –1999999997 through +999999999.
+
+    /// The number is set to the result of raising `self` to the power of `exp`, rounded if
+    /// necessary using the settings in the context. Results will be exact when `exp` has an
+    /// integral value and the result does not need to be rounded, and also will be exact in certain
+    /// special cases, such as when `self` is a zero (see the arithmetic specification for details).
+    /// Inexact results will always be full precision, and will almost always be correctly rounded,
+    /// but may be up to 1 ulp (unit in last place) in error in rare cases. This is a mathematical
+    /// function; the 106 restrictions on precision and range apply as described above, except that
+    /// the normal range of values and context is allowed if `exp` has an integral value in the
+    /// range –1999999997 through +999999999.
     pub fn pow<O: AsRef<d128>>(mut self, exp: O) -> d128 {
         d128::with_context(|ctx| unsafe {
             let mut num_self: DecNumber = uninitialized();
-            let mut num_rhs : DecNumber = uninitialized();
+            let mut num_rhs: DecNumber = uninitialized();
             decimal128ToNumber(&self, &mut num_self);
             decimal128ToNumber(exp.as_ref(), &mut num_rhs);
             decNumberPower(&mut num_self, &num_self, &num_rhs, ctx);
@@ -744,7 +745,11 @@ extern "C" {
     // DecNumber stuff.
     fn decimal128FromNumber(res: *mut d128, src: *const DecNumber, ctx: *mut Context) -> *mut d128;
     fn decimal128ToNumber(src: *const d128, res: *mut DecNumber) -> *mut DecNumber;
-    fn decNumberPower(res: *mut DecNumber, lhs: *const DecNumber, rhs: *const DecNumber, ctx: *mut Context) -> *mut DecNumber;
+    fn decNumberPower(res: *mut DecNumber,
+                      lhs: *const DecNumber,
+                      rhs: *const DecNumber,
+                      ctx: *mut Context)
+                      -> *mut DecNumber;
 }
 
 #[cfg(test)]
