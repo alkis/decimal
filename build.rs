@@ -1,6 +1,11 @@
 extern crate gcc;
 
 fn main() {
+    let litend = if cfg!(target_endian = "little") {
+        "1"
+    } else {
+        "0"
+    };
     gcc::Config::new()
         .include("decNumber")
         .file("decNumber/decContext.c")
@@ -13,5 +18,6 @@ fn main() {
         .file("decNumber/decimal32.c")
         .file("decNumber/decimal64.c")
         .define("DECNUMDIGITS", Some("34"))
+        .define("DECLITEND", Some(litend))
         .compile("libdecNumber.a");
 }
