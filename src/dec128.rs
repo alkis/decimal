@@ -449,10 +449,10 @@ impl d128 {
     pub fn pow<O: AsRef<d128>>(mut self, exp: O) -> d128 {
         d128::with_context(|ctx| unsafe {
             let mut num_self: decNumber = uninitialized();
-            let mut num_rhs: decNumber = uninitialized();
+            let mut num_exp: decNumber = uninitialized();
             decimal128ToNumber(&self, &mut num_self);
-            decimal128ToNumber(exp.as_ref(), &mut num_rhs);
-            decNumberPower(&mut num_self, &num_self, &num_rhs, ctx);
+            decimal128ToNumber(exp.as_ref(), &mut num_exp);
+            decNumberPower(&mut num_self, &num_self, &num_exp, ctx);
             *decimal128FromNumber(&mut self, &num_self, ctx)
         })
     }
