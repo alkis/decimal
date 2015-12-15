@@ -23,6 +23,18 @@ pub struct d128 {
     bytes: [uint8_t; 16],
 }
 
+#[repr(C)]
+#[derive(Clone, Copy)]
+struct decNumber {
+    digits: i32,
+    exponent: i32,
+    bits: u8,
+    // DECPUN = 3 because this is the fastest for conversion between decNumber and decQuad
+    // DECNUMDIGITS = 34 because we use decQuad only
+    // 12 = ((DECNUMDIGITS+DECDPUN-1)/DECDPUN)
+    lsu: [u16; 12],
+}
+
 #[cfg(feature = "rustc-serialize")]
 impl Decodable for d128 {
     fn decode<D: Decoder>(d: &mut D) -> Result<Self, D::Error> {
@@ -426,6 +438,26 @@ impl d128 {
         d128::with_context(|ctx| unsafe { *decQuadNextMinus(&mut self, &self, ctx) })
     }
 
+    /// The number is set to the result of raising `self` to the power of `exp`, rounded if
+    /// necessary using the settings in the context. Results will be exact when `exp` has an
+    /// integral value and the result does not need to be rounded, and also will be exact in certain
+    /// special cases, such as when `self` is a zero (see the arithmetic specification for details).
+    /// Inexact results will always be full precision, and will almost always be correctly rounded,
+    /// but may be up to 1 ulp (unit in last place) in error in rare cases. This is a mathematical
+    /// function; the 106 restrictions on precision and range apply as described above, except that
+    /// the normal range of values and context is allowed if `exp` has an integral value in the
+    /// range –1999999997 through +999999999.
+    pub fn pow<O: AsRef<d128>>(mut self, exp: O) -> d128 {
+        d128::with_context(|ctx| unsafe {
+            let mut num_self: decNumber = uninitialized();
+            let mut num_rhs: decNumber = uninitialized();
+            decimal128ToNumber(&self, &mut num_self);
+            decimal128ToNumber(exp.as_ref(), &mut num_rhs);
+            decNumberPower(&mut num_self, &num_self, &num_rhs, ctx);
+            *decimal128FromNumber(&mut self, &num_self, ctx)
+        })
+    }
+
     /// Returns the ‘next’ d128 to `self` in the direction of `other` according to proposed IEEE
     /// 754  rules for nextAfter.  If `self` == `other` the result is `self`. If either operand is
     /// a NaN the result is as for arithmetic operations. Otherwise (the operands are numeric and
@@ -710,6 +742,14 @@ extern "C" {
     fn decQuadIsSigned(src: *const d128) -> uint32_t;
     fn decQuadIsSubnormal(src: *const d128) -> uint32_t;
     fn decQuadIsZero(src: *const d128) -> uint32_t;
+    // decNumber stuff.
+    fn decimal128FromNumber(res: *mut d128, src: *const decNumber, ctx: *mut Context) -> *mut d128;
+    fn decimal128ToNumber(src: *const d128, res: *mut decNumber) -> *mut decNumber;
+    fn decNumberPower(res: *mut decNumber,
+                      lhs: *const decNumber,
+                      rhs: *const decNumber,
+                      ctx: *mut Context)
+                      -> *mut decNumber;
 }
 
 #[cfg(test)]
