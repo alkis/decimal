@@ -1,3 +1,8 @@
+## 0.1.3
+
+- works for big and little endian architectures
+- add pow
+
 ## 0.1.2 (2015-12-13)
 
 - add operator overloads
