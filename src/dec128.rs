@@ -17,7 +17,7 @@ use std::num::FpCategory;
 thread_local!(static CTX: RefCell<Context> = RefCell::new(d128::default_context()));
 
 #[repr(C)]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)]
 /// A 128-bit decimal floating point type.
 pub struct d128 {
     bytes: [uint8_t; 16],
@@ -129,6 +129,13 @@ impl fmt::Display for d128 {
             let cstr = CStr::from_ptr(buf.as_ptr());
             fmt.pad(from_utf8_unchecked(cstr.to_bytes()))
         }
+    }
+}
+
+/// Same as `fmt::Display`.
+impl fmt::Debug for d128 {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Display::fmt(self, fmt)
     }
 }
 
