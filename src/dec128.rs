@@ -457,6 +457,52 @@ impl d128 {
         })
     }
 
+    /// The number is set to _e_ raised to the power of `exp`. Finite results will always be full
+    /// precision and inexact, except when `exp` is a zero or –Infinity (giving 1 or 0
+    /// respectively). Inexact results will almost always be correctly rounded, but may be up to 1
+    /// ulp (unit in last place) in error in rare cases. This is a mathematical function; the
+    /// 10<sup>6</sup> restrictions on precision and range apply as described above.
+    pub fn exp<O: AsRef<d128>>(mut self, exp: O) -> d128 {
+        d128::with_context(|ctx| unsafe {
+            let mut num_self: decNumber = uninitialized();
+            let mut num_exp: decNumber = uninitialized();
+            decimal128ToNumber(&self, &mut num_self);
+            decimal128ToNumber(exp.as_ref(), &mut num_exp);
+            decNumberExp(&mut num_self, &num_self, &num_exp, ctx);
+            *decimal128FromNumber(&mut self, &num_self, ctx)
+        })
+    }
+
+    /// The number is set to the natural logarithm (logarithm in base e) of `self`. `self` must be
+    /// positive or a zero. Finite results will always be full precision and inexact, except when
+    /// `self` is equal to 1, which gives an exact result of 0. Inexact results will almost always
+    /// be correctly rounded, but may be up to 1 ulp (unit in last place) in error in rare cases.
+    /// This is a mathematical function; the 10<sup>6</sup> restrictions on precision and range
+    /// apply as described above.
+    pub fn ln(mut self) -> d128 {
+        d128::with_context(|ctx| unsafe {
+            let mut num_self: decNumber = uninitialized();
+            decimal128ToNumber(&self, &mut num_self);
+            decNumberLn(&mut num_self, &num_self, ctx);
+            *decimal128FromNumber(&mut self, &num_self, ctx)
+        })
+    }
+
+    /// The number is set to the logarithm in base ten of `self`. `self` must be positive or a
+    /// zero. Finite results will always be full precision and inexact, except when `self` is equal
+    /// to an integral power of ten, in which case the result is the exact integer. Inexact results
+    /// will almost always be correctly rounded, but may be up to 1 ulp (unit in last place) in
+    /// error in rare cases. This is a mathematical function; the 10<sup>6</sup> restrictions on
+    /// precision and range apply as described above.
+    pub fn log10(mut self) -> d128 {
+        d128::with_context(|ctx| unsafe {
+            let mut num_self: decNumber = uninitialized();
+            decimal128ToNumber(&self, &mut num_self);
+            decNumberLog10(&mut num_self, &num_self, ctx);
+            *decimal128FromNumber(&mut self, &num_self, ctx)
+        })
+    }
+
     /// Returns the ‘next’ d128 to `self` in the direction of `other` according to proposed IEEE
     /// 754  rules for nextAfter.  If `self` == `other` the result is `self`. If either operand is
     /// a NaN the result is as for arithmetic operations. Otherwise (the operands are numeric and
@@ -749,6 +795,19 @@ extern "C" {
                       rhs: *const decNumber,
                       ctx: *mut Context)
                       -> *mut decNumber;
+    fn decNumberExp(res: *mut decNumber,
+                    lhs: *const decNumber,
+                    rhs: *const decNumber,
+                    ctx: *mut Context)
+                    -> *mut decNumber;
+    fn decNumberLn(res: *mut decNumber,
+                   rhs: *const decNumber,
+                   ctx: *mut Context)
+                   -> *mut decNumber;
+                   fn decNumberLog10(res: *mut decNumber,
+                                  rhs: *const decNumber,
+                                  ctx: *mut Context)
+                                  -> *mut decNumber;
 }
 
 #[cfg(test)]
