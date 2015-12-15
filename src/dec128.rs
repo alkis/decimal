@@ -394,8 +394,8 @@ impl d128 {
     /// Calculates the fused multiply-add `self` × `a` + `b` and returns the result. The multiply
     /// is carried out first and is exact, so this operation has only the one, final, rounding.
     pub fn mul_add<O: AsRef<d128>>(mut self, a: O, b: O) -> d128 {
-        d128::with_context(|ctx| {
-            unsafe { *decQuadFMA(&mut self, &self, a.as_ref(), b.as_ref(), ctx) }
+        d128::with_context(|ctx| unsafe {
+            *decQuadFMA(&mut self, &self, a.as_ref(), b.as_ref(), ctx)
         })
     }
 
@@ -465,8 +465,8 @@ impl d128 {
     /// larger  (or smaller) than `self`. The addition will set flags, except that if the result is
     /// normal  (finite, non-zero, and not subnormal) no flags are set.
     pub fn towards<O: AsRef<d128>>(mut self, other: O) -> d128 {
-        d128::with_context(|ctx| {
-            unsafe { *decQuadNextToward(&mut self, &self, other.as_ref(), ctx) }
+        d128::with_context(|ctx| unsafe {
+            *decQuadNextToward(&mut self, &self, other.as_ref(), ctx)
         })
     }
 
@@ -510,11 +510,9 @@ impl d128 {
     /// are numerically equal, and 1 indicates that `self` is greater than `other`. NaN is returned
     /// only if `self` or `other` is a NaN.
     pub fn compare<O: AsRef<d128>>(&self, other: O) -> d128 {
-        d128::with_context(|ctx| {
-            unsafe {
-                let mut res: d128 = uninitialized();
-                *decQuadCompare(&mut res, self, other.as_ref(), ctx)
-            }
+        d128::with_context(|ctx| unsafe {
+            let mut res: d128 = uninitialized();
+            *decQuadCompare(&mut res, self, other.as_ref(), ctx)
         })
     }
 
@@ -522,11 +520,9 @@ impl d128 {
     /// exponent) and returns the result. No status is set (a signaling NaN is ordered between
     /// Infinity and NaN). The result will be –1, 0, or 1.
     pub fn compare_total<O: AsRef<d128>>(&self, other: O) -> d128 {
-        d128::with_context(|ctx| {
-            unsafe {
-                let mut res: d128 = uninitialized();
-                *decQuadCompareTotal(&mut res, self, other.as_ref(), ctx)
-            }
+        d128::with_context(|ctx| unsafe {
+            let mut res: d128 = uninitialized();
+            *decQuadCompareTotal(&mut res, self, other.as_ref(), ctx)
         })
     }
 
