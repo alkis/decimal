@@ -17,15 +17,15 @@ use std::num::FpCategory;
 thread_local!(static CTX: RefCell<Context> = RefCell::new(d128::default_context()));
 
 #[repr(C)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 /// A 128-bit decimal floating point type.
 pub struct d128 {
-    bytes: [uint8_t; 16],
+    pub bytes: [uint8_t; 16],
 }
 
 #[repr(C)]
 #[derive(Clone, Copy)]
-struct DecNumber {
+struct decNumber {
     digits: i32,
     exponent: i32,
     bits: u8,
@@ -129,13 +129,6 @@ impl fmt::Display for d128 {
             let cstr = CStr::from_ptr(buf.as_ptr());
             fmt.pad(from_utf8_unchecked(cstr.to_bytes()))
         }
-    }
-}
-
-/// Same as `fmt::Display`.
-impl fmt::Debug for d128 {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        fmt::Display::fmt(self, fmt)
     }
 }
 
@@ -449,8 +442,8 @@ impl d128 {
     /// range –1999999997 through +999999999.
     pub fn pow<O: AsRef<d128>>(mut self, exp: O) -> d128 {
         d128::with_context(|ctx| unsafe {
-            let mut num_self: DecNumber = uninitialized();
-            let mut num_rhs: DecNumber = uninitialized();
+            let mut num_self: decNumber = uninitialized();
+            let mut num_rhs: decNumber = uninitialized();
             decimal128ToNumber(&self, &mut num_self);
             decimal128ToNumber(exp.as_ref(), &mut num_rhs);
             decNumberPower(&mut num_self, &num_self, &num_rhs, ctx);
@@ -742,14 +735,14 @@ extern "C" {
     fn decQuadIsSigned(src: *const d128) -> uint32_t;
     fn decQuadIsSubnormal(src: *const d128) -> uint32_t;
     fn decQuadIsZero(src: *const d128) -> uint32_t;
-    // DecNumber stuff.
-    fn decimal128FromNumber(res: *mut d128, src: *const DecNumber, ctx: *mut Context) -> *mut d128;
-    fn decimal128ToNumber(src: *const d128, res: *mut DecNumber) -> *mut DecNumber;
-    fn decNumberPower(res: *mut DecNumber,
-                      lhs: *const DecNumber,
-                      rhs: *const DecNumber,
+    // decNumber stuff.
+    fn decimal128FromNumber(res: *mut d128, src: *const decNumber, ctx: *mut Context) -> *mut d128;
+    fn decimal128ToNumber(src: *const d128, res: *mut decNumber) -> *mut decNumber;
+    fn decNumberPower(res: *mut decNumber,
+                      lhs: *const decNumber,
+                      rhs: *const decNumber,
                       ctx: *mut Context)
-                      -> *mut DecNumber;
+                      -> *mut decNumber;
 }
 
 #[cfg(test)]
