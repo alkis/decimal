@@ -20,7 +20,7 @@ thread_local!(static CTX: RefCell<Context> = RefCell::new(d128::default_context(
 #[derive(Clone, Copy, Debug)]
 /// A 128-bit decimal floating point type.
 pub struct d128 {
-    pub bytes: [uint8_t; 16],
+    bytes: [uint8_t; 16],
 }
 
 #[repr(C)]
