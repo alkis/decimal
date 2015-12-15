@@ -438,15 +438,14 @@ impl d128 {
         d128::with_context(|ctx| unsafe { *decQuadNextMinus(&mut self, &self, ctx) })
     }
 
-    /// The number is set to the result of raising `self` to the power of `exp`, rounded if
-    /// necessary using the settings in the context. Results will be exact when `exp` has an
-    /// integral value and the result does not need to be rounded, and also will be exact in certain
-    /// special cases, such as when `self` is a zero (see the arithmetic specification for details).
-    /// Inexact results will always be full precision, and will almost always be correctly rounded,
-    /// but may be up to 1 ulp (unit in last place) in error in rare cases. This is a mathematical
-    /// function; the 106 restrictions on precision and range apply as described above, except that
-    /// the normal range of values and context is allowed if `exp` has an integral value in the
-    /// range –1999999997 through +999999999.
+    /// The number is set to the result of raising `self` to the power of `exp`. Results will be
+    /// exact when `exp` has an integral value and the result does not need to be rounded, and also
+    /// will be exact in certain special cases, such as when `self` is a zero (see the arithmetic
+    /// specification for details). Inexact results will always be full precision, and will almost
+    /// always be correctly rounded, but may be up to 1 _ulp_ (unit in last place) in error in rare
+    /// cases. This is a mathematical function; the 10<sup>6</sup> restrictions on precision and
+    /// range apply as described above, except that the normal range of values is allowed if `exp`
+    /// has an integral value in the range –1999999997 through +999999999.
     pub fn pow<O: AsRef<d128>>(mut self, exp: O) -> d128 {
         d128::with_context(|ctx| unsafe {
             let mut num_self: decNumber = uninitialized();
