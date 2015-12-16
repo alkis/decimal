@@ -1,4 +1,4 @@
-## 0.1.3
+## 0.2.0 (2015-12-06)
 
 - works for big and little endian architectures
 - add pow, log10, exp, ln
