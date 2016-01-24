@@ -1,6 +1,9 @@
 #[macro_use]
 extern crate bitflags;
 extern crate libc;
+#[cfg(feature = "ord_subset")]
+extern crate ord_subset;
+#[cfg(feature = "rustc-serialize")]
 extern crate rustc_serialize;
 
 #[macro_export]

@@ -4,6 +4,9 @@ use super::Rounding;
 
 use context::*;
 use libc::{c_char, int32_t, uint8_t, uint32_t};
+#[cfg(feature = "ord_subset")]
+use ord_subset;
+#[cfg(feature = "rustc-serialize")]
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 use std::cell::RefCell;
 use std::ffi::{CStr, CString};
@@ -33,6 +36,13 @@ struct decNumber {
     // DECNUMDIGITS = 34 because we use decQuad only
     // 12 = ((DECNUMDIGITS+DECDPUN-1)/DECDPUN)
     lsu: [u16; 12],
+}
+
+#[cfg(feature = "ord_subset")]
+impl ord_subset::OrdSubset for d128 {
+    fn is_outside_order(&self) -> bool {
+        self.is_nan()
+    }
 }
 
 #[cfg(feature = "rustc-serialize")]
@@ -810,7 +820,31 @@ extern "C" {
 mod tests {
     use super::*;
 
+    #[cfg(feature = "ord_subset")]
+    use ord_subset;
+
+    #[cfg(feature = "rustc-serialize")]
     use rustc_serialize::json;
+
+    #[cfg(feature = "ord_subset")]
+    #[test]
+    #[should_panic]
+    fn test_ord_subset_nan() {
+        ord_subset::OrdVar::new(d128!(NaN));
+    }
+
+    #[cfg(feature = "ord_subset")]
+    #[test]
+    #[should_panic]
+    fn test_ord_subset_qnan() {
+        ord_subset::OrdVar::new(d128!(qNaN));
+    }
+
+    #[cfg(feature = "ord_subset")]
+    #[test]
+    fn test_ord_subset_zero() {
+        assert_eq!(*ord_subset::OrdVar::new(d128::zero()), d128::zero());
+    }
 
     #[cfg(feature = "rustc-serialize")]
     #[test]
