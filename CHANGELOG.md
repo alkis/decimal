@@ -1,3 +1,7 @@
+## 0.3.0 (2015-01-24)
+
+- add ord_subset support to enable Eq and Ord for a subset of decimals
+
 ## 0.2.0 (2015-12-06)
 
 - works for big and little endian architectures
