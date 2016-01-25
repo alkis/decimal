@@ -45,6 +45,13 @@ impl ord_subset::OrdSubset for d128 {
     }
 }
 
+#[cfg(feature = "ord_subset")]
+impl Into<ord_subset::OrdVar<d128>> for d128 {
+    fn into(self) -> ord_subset::OrdVar<d128> {
+        ord_subset::OrdVar::new(self)
+    }
+}
+
 #[cfg(feature = "rustc-serialize")]
 impl Decodable for d128 {
     fn decode<D: Decoder>(d: &mut D) -> Result<Self, D::Error> {
@@ -819,6 +826,7 @@ extern "C" {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::BTreeMap;
 
     #[cfg(feature = "ord_subset")]
     use ord_subset;
@@ -844,6 +852,14 @@ mod tests {
     #[test]
     fn test_ord_subset_zero() {
         assert_eq!(*ord_subset::OrdVar::new(d128::zero()), d128::zero());
+    }
+
+    #[cfg(feature = "ord_subset")]
+    #[test]
+    fn test_into_for_btreemap() {
+        let mut m = BTreeMap::<ord_subset::OrdVar<d128>, i64>::new();
+        m.insert(d128!(1.1).into(), 1);
+        assert_eq!(m[&d128!(1.1).into()], 1);
     }
 
     #[cfg(feature = "rustc-serialize")]
