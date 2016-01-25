@@ -1,6 +1,6 @@
 [package]
 name = "decimal"
-version = "0.3.0"
+version = "0.3.1"
 authors = ["Alkis Evlogimenos <alkis@evlogimenos.com>"]
 build = "build.rs"
 description = "Decimal floating point arithmetic for Rust"

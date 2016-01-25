@@ -1,4 +1,4 @@
-## 0.3.1
+## 0.3.1 (2015-01-25)
 
 - add Into<OrdVar<d128>> for more ergonomic use when indexing an OrderedMap with
   a d128
