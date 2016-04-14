@@ -84,7 +84,7 @@ bitflags! {
     /// // The previous status flag was not cleared!
     /// assert!(d128::get_status().contains(decimal::DIVISION_BY_ZERO));
     /// # }
-    flags Status: libc::uint32_t {
+    pub flags Status: ::libc::uint32_t {
         /// Conversion syntax error.
         const CONVERSION_SYNTAX    = 0x00000001,
         /// Division by zero.
