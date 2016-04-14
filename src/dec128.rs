@@ -12,7 +12,9 @@ use std::cell::RefCell;
 use std::ffi::{CStr, CString};
 use std::fmt;
 use std::mem::uninitialized;
-use std::ops::{Add, Sub, Mul, Div, Rem, Neg, BitAnd, BitOr, BitXor, Not, Shl, Shr};
+use std::ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Div, DivAssign, Rem, RemAssign,
+               Neg, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not, Shl,
+               ShlAssign, Shr, ShrAssign};
 use std::str::FromStr;
 use std::str::from_utf8_unchecked;
 use std::num::FpCategory;
@@ -268,28 +270,50 @@ macro_rules! ffi_binary_op {
     }
 }
 
+macro_rules! ffi_unary_assign_op {
+    ($(#[$attr:meta])* impl $op:ident, $method:ident, $ffi:ident for $t:ident) => {
+        $(#[$attr])*
+        impl $op<$t> for $t {
+            fn $method(&mut self, other: $t) {
+                $t::with_context(|ctx| {
+                    unsafe { $ffi(self, self, &other, ctx); }
+                })
+            }
+        }
+    }
+}
+
 ffi_binary_op!(impl Add, add, decQuadAdd for d128);
 ffi_binary_op!(impl Sub, sub, decQuadSubtract for d128);
 ffi_binary_op!(impl Mul, mul, decQuadMultiply for d128);
 ffi_binary_op!(impl Div, div, decQuadDivide for d128);
 ffi_binary_op!(
-    /// The operands must be zero or positive, an integer (finite with zero exponent) and comprise
-    /// only zeros and/or ones; if not, INVALID_OPERATION is set.
+/// The operands must be zero or positive, an integer (finite with zero exponent) and comprise
+/// only zeros and/or ones; if not, INVALID_OPERATION is set.
     impl BitAnd, bitand, decQuadAnd for d128);
 ffi_binary_op!(
-    /// The operands must be zero or positive, an integer (finite with zero exponent) and comprise
-    /// only zeros and/or ones; if not, INVALID_OPERATION is set.
+/// The operands must be zero or positive, an integer (finite with zero exponent) and comprise
+/// only zeros and/or ones; if not, INVALID_OPERATION is set.
     impl BitOr, bitor, decQuadOr for d128);
 ffi_binary_op!(
-    /// The operands must be zero or positive, an integer (finite with zero exponent) and comprise
-    /// only zeros and/or ones; if not, INVALID_OPERATION is set.
+/// The operands must be zero or positive, an integer (finite with zero exponent) and comprise
+/// only zeros and/or ones; if not, INVALID_OPERATION is set.
     impl BitXor, bitxor, decQuadXor for d128);
 ffi_binary_op!(impl Rem, rem, decQuadRemainder for d128);
 
+ffi_unary_assign_op!(impl AddAssign, add_assign, decQuadAdd for d128);
+ffi_unary_assign_op!(impl SubAssign, sub_assign, decQuadSubtract for d128);
+ffi_unary_assign_op!(impl MulAssign, mul_assign, decQuadMultiply for d128);
+ffi_unary_assign_op!(impl DivAssign, div_assign, decQuadDivide for d128);
+ffi_unary_assign_op!(impl BitAndAssign, bitand_assign, decQuadAnd for d128);
+ffi_unary_assign_op!(impl BitOrAssign, bitor_assign, decQuadOr for d128);
+ffi_unary_assign_op!(impl BitXorAssign, bitxor_assign, decQuadXor for d128);
+ffi_unary_assign_op!(impl RemAssign, rem_assign, decQuadRemainder for d128);
+
 ffi_unary_op!(impl Neg, neg, decQuadMinus for d128);
 ffi_unary_op!(
-    /// The operand must be zero or positive, an integer (finite with zero exponent) and comprise
-    /// only zeros and/or ones; if not, INVALID_OPERATION is set.
+/// The operand must be zero or positive, an integer (finite with zero exponent) and comprise
+/// only zeros and/or ones; if not, INVALID_OPERATION is set.
     impl Not, not, decQuadInvert for d128);
 
 /// The result is `self` with the digits of the coefficient shifted to the left without adjusting
@@ -320,6 +344,17 @@ impl<'a> Shl<usize> for &'a d128 {
     }
 }
 
+impl ShlAssign<usize> for d128 {
+    fn shl_assign(&mut self, amount: usize) {
+        let shift = d128::from(amount as u32);
+        d128::with_context(|ctx| {
+            unsafe {
+                decQuadShift(self, self, &shift, ctx);
+            }
+        })
+    }
+}
+
 /// The result is `self` with the digits of the coefficient shifted to the right without adjusting
 /// the exponent or the sign of `self`. Any digits ‘shifted in’ from the left will be 0. `amount`
 /// is the count of positions to shift and must be a in the range –34 through +34. NaNs are
@@ -343,6 +378,17 @@ impl<'a> Shr<usize> for &'a d128 {
             unsafe {
                 let mut res: d128 = uninitialized();
                 *decQuadShift(&mut res, self, &shift, ctx)
+            }
+        })
+    }
+}
+
+impl ShrAssign<usize> for d128 {
+    fn shr_assign(&mut self, amount: usize) {
+        let shift = -d128::from(amount as u32);
+        d128::with_context(|ctx| {
+            unsafe {
+                decQuadShift(self, self, &shift, ctx);
             }
         })
     }
@@ -817,10 +863,10 @@ extern "C" {
                    rhs: *const decNumber,
                    ctx: *mut Context)
                    -> *mut decNumber;
-                   fn decNumberLog10(res: *mut decNumber,
-                                  rhs: *const decNumber,
-                                  ctx: *mut Context)
-                                  -> *mut decNumber;
+    fn decNumberLog10(res: *mut decNumber,
+                      rhs: *const decNumber,
+                      ctx: *mut Context)
+                      -> *mut decNumber;
 }
 
 #[cfg(test)]
@@ -887,6 +933,25 @@ mod tests {
         assert_eq!(d128!(3.33), &d128!(1.11) + d128!(2.22));
         assert_eq!(d128!(3.33), d128!(1.11) + &d128!(2.22));
         assert_eq!(d128!(3.33), &d128!(1.11) + &d128!(2.22));
+        assert_eq!(d128!(5) << 2, d128!(500));
+        assert_eq!(d128!(500) >> 1, d128!(50));
+    }
+
+    #[test]
+    fn assign_op() {
+        let mut x = d128!(1);
+        x += d128!(2);
+        assert_eq!(x, d128!(3));
+        x *= d128!(3);
+        assert_eq!(x, d128!(9));
+        x -= d128!(1);
+        assert_eq!(x, d128!(8));
+        x /= d128!(16);
+        assert_eq!(x, d128!(0.5));
+        x <<= 2;
+        assert_eq!(x, d128!(50));
+        x >>= 1;
+        assert_eq!(x, d128!(5));
     }
 
     #[test]
