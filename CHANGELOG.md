@@ -1,3 +1,7 @@
+## 0.4.0 (2016-04-15)
+
+- add assignment operators (AddAssign, SubAssign, etc).
+
 ## 0.3.1 (2015-01-25)
 
 - add Into<OrdVar<d128>> for more ergonomic use when indexing an OrderedMap with
