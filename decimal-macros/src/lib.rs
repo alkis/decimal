@@ -54,33 +54,6 @@ fn d128_lit<'cx>(cx: &'cx mut ExtCtxt, sp: Span, tts: &[TokenTree]) -> Box<MacRe
     DummyResult::any(sp)
 }
 
-/*
-fn expr_to_string(cx: &mut ExtCtxt, expr: P<Expr>, err_msg: &'static str) -> Option<String> {
-    let mut s = String::new();
-    match expr_append(cx, &mut s, expr, err_msg) {
-        Ok(())  => Some(s),
-        Err(()) => None,
-    }
-}
-
-fn expr_append(cx: &mut ExtCtxt, s: &mut String, expr: P<Expr>, err_msg: &'static str) -> Result<(), ()> {
-    match expr.clone().node {
-        ExprKind::Lit(lit) => {
-            match lit.node { // Ignore suffixes
-                LitKind::Int(i, _)          => s.push_str(&i.to_string()),
-                LitKind::Float(s, _)        => s.push_str(&*s),
-                LitKind::FloatUnsuffixed(s) => s.push_str(&*s),
-                _ => {}
-            }
-        },
-        _ => {
-            cx.span_err(expr.clone().span, &format!("expr: {:?}", expr.clone().node));
-            cx.span_err(expr.span, err_msg);
-            None
-        },
-    }
-}*/
-
 #[plugin_registrar]
 pub fn plugin_registrar(reg: &mut Registry) {
     reg.register_macro("dmacros_d128", d128_lit)
