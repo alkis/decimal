@@ -9,6 +9,7 @@ extern crate ord_subset;
 extern crate rustc_serialize;
 
 #[cfg(feature = "constant_macros")]
+#[macro_export]
 /// A macro to construct d128 literals.
 ///
 /// # Examples:
