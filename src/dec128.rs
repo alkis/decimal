@@ -4,12 +4,17 @@ use super::Rounding;
 
 use context::*;
 use libc::{c_char, int32_t, uint8_t, uint32_t};
+#[cfg(feature = "ord_subset")]
+use ord_subset;
+#[cfg(feature = "rustc-serialize")]
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 use std::cell::RefCell;
 use std::ffi::{CStr, CString};
 use std::fmt;
 use std::mem::uninitialized;
-use std::ops::{Add, Sub, Mul, Div, Rem, Neg, BitAnd, BitOr, BitXor, Not, Shl, Shr};
+use std::ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Div, DivAssign, Rem, RemAssign,
+               Neg, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not, Shl,
+               ShlAssign, Shr, ShrAssign};
 use std::str::FromStr;
 use std::str::from_utf8_unchecked;
 use std::num::FpCategory;
@@ -33,6 +38,20 @@ struct decNumber {
     // DECNUMDIGITS = 34 because we use decQuad only
     // 12 = ((DECNUMDIGITS+DECDPUN-1)/DECDPUN)
     lsu: [u16; 12],
+}
+
+#[cfg(feature = "ord_subset")]
+impl ord_subset::OrdSubset for d128 {
+    fn is_outside_order(&self) -> bool {
+        self.is_nan()
+    }
+}
+
+#[cfg(feature = "ord_subset")]
+impl Into<ord_subset::OrdVar<d128>> for d128 {
+    fn into(self) -> ord_subset::OrdVar<d128> {
+        ord_subset::OrdVar::new(self)
+    }
 }
 
 #[cfg(feature = "rustc-serialize")]
@@ -251,28 +270,50 @@ macro_rules! ffi_binary_op {
     }
 }
 
+macro_rules! ffi_unary_assign_op {
+    ($(#[$attr:meta])* impl $op:ident, $method:ident, $ffi:ident for $t:ident) => {
+        $(#[$attr])*
+        impl $op<$t> for $t {
+            fn $method(&mut self, other: $t) {
+                $t::with_context(|ctx| {
+                    unsafe { $ffi(self, self, &other, ctx); }
+                })
+            }
+        }
+    }
+}
+
 ffi_binary_op!(impl Add, add, decQuadAdd for d128);
 ffi_binary_op!(impl Sub, sub, decQuadSubtract for d128);
 ffi_binary_op!(impl Mul, mul, decQuadMultiply for d128);
 ffi_binary_op!(impl Div, div, decQuadDivide for d128);
 ffi_binary_op!(
-    /// The operands must be zero or positive, an integer (finite with zero exponent) and comprise
-    /// only zeros and/or ones; if not, INVALID_OPERATION is set.
+/// The operands must be zero or positive, an integer (finite with zero exponent) and comprise
+/// only zeros and/or ones; if not, INVALID_OPERATION is set.
     impl BitAnd, bitand, decQuadAnd for d128);
 ffi_binary_op!(
-    /// The operands must be zero or positive, an integer (finite with zero exponent) and comprise
-    /// only zeros and/or ones; if not, INVALID_OPERATION is set.
+/// The operands must be zero or positive, an integer (finite with zero exponent) and comprise
+/// only zeros and/or ones; if not, INVALID_OPERATION is set.
     impl BitOr, bitor, decQuadOr for d128);
 ffi_binary_op!(
-    /// The operands must be zero or positive, an integer (finite with zero exponent) and comprise
-    /// only zeros and/or ones; if not, INVALID_OPERATION is set.
+/// The operands must be zero or positive, an integer (finite with zero exponent) and comprise
+/// only zeros and/or ones; if not, INVALID_OPERATION is set.
     impl BitXor, bitxor, decQuadXor for d128);
 ffi_binary_op!(impl Rem, rem, decQuadRemainder for d128);
 
+ffi_unary_assign_op!(impl AddAssign, add_assign, decQuadAdd for d128);
+ffi_unary_assign_op!(impl SubAssign, sub_assign, decQuadSubtract for d128);
+ffi_unary_assign_op!(impl MulAssign, mul_assign, decQuadMultiply for d128);
+ffi_unary_assign_op!(impl DivAssign, div_assign, decQuadDivide for d128);
+ffi_unary_assign_op!(impl BitAndAssign, bitand_assign, decQuadAnd for d128);
+ffi_unary_assign_op!(impl BitOrAssign, bitor_assign, decQuadOr for d128);
+ffi_unary_assign_op!(impl BitXorAssign, bitxor_assign, decQuadXor for d128);
+ffi_unary_assign_op!(impl RemAssign, rem_assign, decQuadRemainder for d128);
+
 ffi_unary_op!(impl Neg, neg, decQuadMinus for d128);
 ffi_unary_op!(
-    /// The operand must be zero or positive, an integer (finite with zero exponent) and comprise
-    /// only zeros and/or ones; if not, INVALID_OPERATION is set.
+/// The operand must be zero or positive, an integer (finite with zero exponent) and comprise
+/// only zeros and/or ones; if not, INVALID_OPERATION is set.
     impl Not, not, decQuadInvert for d128);
 
 /// The result is `self` with the digits of the coefficient shifted to the left without adjusting
@@ -303,6 +344,17 @@ impl<'a> Shl<usize> for &'a d128 {
     }
 }
 
+impl ShlAssign<usize> for d128 {
+    fn shl_assign(&mut self, amount: usize) {
+        let shift = d128::from(amount as u32);
+        d128::with_context(|ctx| {
+            unsafe {
+                decQuadShift(self, self, &shift, ctx);
+            }
+        })
+    }
+}
+
 /// The result is `self` with the digits of the coefficient shifted to the right without adjusting
 /// the exponent or the sign of `self`. Any digits ‘shifted in’ from the left will be 0. `amount`
 /// is the count of positions to shift and must be a in the range –34 through +34. NaNs are
@@ -326,6 +378,17 @@ impl<'a> Shr<usize> for &'a d128 {
             unsafe {
                 let mut res: d128 = uninitialized();
                 *decQuadShift(&mut res, self, &shift, ctx)
+            }
+        })
+    }
+}
+
+impl ShrAssign<usize> for d128 {
+    fn shr_assign(&mut self, amount: usize) {
+        let shift = -d128::from(amount as u32);
+        d128::with_context(|ctx| {
+            unsafe {
+                decQuadShift(self, self, &shift, ctx);
             }
         })
     }
@@ -394,8 +457,8 @@ impl d128 {
     /// Calculates the fused multiply-add `self` × `a` + `b` and returns the result. The multiply
     /// is carried out first and is exact, so this operation has only the one, final, rounding.
     pub fn mul_add<O: AsRef<d128>>(mut self, a: O, b: O) -> d128 {
-        d128::with_context(|ctx| {
-            unsafe { *decQuadFMA(&mut self, &self, a.as_ref(), b.as_ref(), ctx) }
+        d128::with_context(|ctx| unsafe {
+            *decQuadFMA(&mut self, &self, a.as_ref(), b.as_ref(), ctx)
         })
     }
 
@@ -438,22 +501,67 @@ impl d128 {
         d128::with_context(|ctx| unsafe { *decQuadNextMinus(&mut self, &self, ctx) })
     }
 
-    /// The number is set to the result of raising `self` to the power of `exp`, rounded if
-    /// necessary using the settings in the context. Results will be exact when `exp` has an
-    /// integral value and the result does not need to be rounded, and also will be exact in certain
-    /// special cases, such as when `self` is a zero (see the arithmetic specification for details).
-    /// Inexact results will always be full precision, and will almost always be correctly rounded,
-    /// but may be up to 1 ulp (unit in last place) in error in rare cases. This is a mathematical
-    /// function; the 106 restrictions on precision and range apply as described above, except that
-    /// the normal range of values and context is allowed if `exp` has an integral value in the
-    /// range –1999999997 through +999999999.
+    /// The number is set to the result of raising `self` to the power of `exp`. Results will be
+    /// exact when `exp` has an integral value and the result does not need to be rounded, and also
+    /// will be exact in certain special cases, such as when `self` is a zero (see the arithmetic
+    /// specification for details). Inexact results will always be full precision, and will almost
+    /// always be correctly rounded, but may be up to 1 _ulp_ (unit in last place) in error in rare
+    /// cases. This is a mathematical function; the 10<sup>6</sup> restrictions on precision and
+    /// range apply as described above, except that the normal range of values is allowed if `exp`
+    /// has an integral value in the range –1999999997 through +999999999.
     pub fn pow<O: AsRef<d128>>(mut self, exp: O) -> d128 {
         d128::with_context(|ctx| unsafe {
             let mut num_self: decNumber = uninitialized();
-            let mut num_rhs: decNumber = uninitialized();
+            let mut num_exp: decNumber = uninitialized();
             decimal128ToNumber(&self, &mut num_self);
-            decimal128ToNumber(exp.as_ref(), &mut num_rhs);
-            decNumberPower(&mut num_self, &num_self, &num_rhs, ctx);
+            decimal128ToNumber(exp.as_ref(), &mut num_exp);
+            decNumberPower(&mut num_self, &num_self, &num_exp, ctx);
+            *decimal128FromNumber(&mut self, &num_self, ctx)
+        })
+    }
+
+    /// The number is set to _e_ raised to the power of `exp`. Finite results will always be full
+    /// precision and inexact, except when `exp` is a zero or –Infinity (giving 1 or 0
+    /// respectively). Inexact results will almost always be correctly rounded, but may be up to 1
+    /// ulp (unit in last place) in error in rare cases. This is a mathematical function; the
+    /// 10<sup>6</sup> restrictions on precision and range apply as described above.
+    pub fn exp<O: AsRef<d128>>(mut self, exp: O) -> d128 {
+        d128::with_context(|ctx| unsafe {
+            let mut num_self: decNumber = uninitialized();
+            let mut num_exp: decNumber = uninitialized();
+            decimal128ToNumber(&self, &mut num_self);
+            decimal128ToNumber(exp.as_ref(), &mut num_exp);
+            decNumberExp(&mut num_self, &num_self, &num_exp, ctx);
+            *decimal128FromNumber(&mut self, &num_self, ctx)
+        })
+    }
+
+    /// The number is set to the natural logarithm (logarithm in base e) of `self`. `self` must be
+    /// positive or a zero. Finite results will always be full precision and inexact, except when
+    /// `self` is equal to 1, which gives an exact result of 0. Inexact results will almost always
+    /// be correctly rounded, but may be up to 1 ulp (unit in last place) in error in rare cases.
+    /// This is a mathematical function; the 10<sup>6</sup> restrictions on precision and range
+    /// apply as described above.
+    pub fn ln(mut self) -> d128 {
+        d128::with_context(|ctx| unsafe {
+            let mut num_self: decNumber = uninitialized();
+            decimal128ToNumber(&self, &mut num_self);
+            decNumberLn(&mut num_self, &num_self, ctx);
+            *decimal128FromNumber(&mut self, &num_self, ctx)
+        })
+    }
+
+    /// The number is set to the logarithm in base ten of `self`. `self` must be positive or a
+    /// zero. Finite results will always be full precision and inexact, except when `self` is equal
+    /// to an integral power of ten, in which case the result is the exact integer. Inexact results
+    /// will almost always be correctly rounded, but may be up to 1 ulp (unit in last place) in
+    /// error in rare cases. This is a mathematical function; the 10<sup>6</sup> restrictions on
+    /// precision and range apply as described above.
+    pub fn log10(mut self) -> d128 {
+        d128::with_context(|ctx| unsafe {
+            let mut num_self: decNumber = uninitialized();
+            decimal128ToNumber(&self, &mut num_self);
+            decNumberLog10(&mut num_self, &num_self, ctx);
             *decimal128FromNumber(&mut self, &num_self, ctx)
         })
     }
@@ -466,8 +574,8 @@ impl d128 {
     /// larger  (or smaller) than `self`. The addition will set flags, except that if the result is
     /// normal  (finite, non-zero, and not subnormal) no flags are set.
     pub fn towards<O: AsRef<d128>>(mut self, other: O) -> d128 {
-        d128::with_context(|ctx| {
-            unsafe { *decQuadNextToward(&mut self, &self, other.as_ref(), ctx) }
+        d128::with_context(|ctx| unsafe {
+            *decQuadNextToward(&mut self, &self, other.as_ref(), ctx)
         })
     }
 
@@ -511,11 +619,9 @@ impl d128 {
     /// are numerically equal, and 1 indicates that `self` is greater than `other`. NaN is returned
     /// only if `self` or `other` is a NaN.
     pub fn compare<O: AsRef<d128>>(&self, other: O) -> d128 {
-        d128::with_context(|ctx| {
-            unsafe {
-                let mut res: d128 = uninitialized();
-                *decQuadCompare(&mut res, self, other.as_ref(), ctx)
-            }
+        d128::with_context(|ctx| unsafe {
+            let mut res: d128 = uninitialized();
+            *decQuadCompare(&mut res, self, other.as_ref(), ctx)
         })
     }
 
@@ -523,11 +629,9 @@ impl d128 {
     /// exponent) and returns the result. No status is set (a signaling NaN is ordered between
     /// Infinity and NaN). The result will be –1, 0, or 1.
     pub fn compare_total<O: AsRef<d128>>(&self, other: O) -> d128 {
-        d128::with_context(|ctx| {
-            unsafe {
-                let mut res: d128 = uninitialized();
-                *decQuadCompareTotal(&mut res, self, other.as_ref(), ctx)
-            }
+        d128::with_context(|ctx| unsafe {
+            let mut res: d128 = uninitialized();
+            *decQuadCompareTotal(&mut res, self, other.as_ref(), ctx)
         })
     }
 
@@ -750,13 +854,59 @@ extern "C" {
                       rhs: *const decNumber,
                       ctx: *mut Context)
                       -> *mut decNumber;
+    fn decNumberExp(res: *mut decNumber,
+                    lhs: *const decNumber,
+                    rhs: *const decNumber,
+                    ctx: *mut Context)
+                    -> *mut decNumber;
+    fn decNumberLn(res: *mut decNumber,
+                   rhs: *const decNumber,
+                   ctx: *mut Context)
+                   -> *mut decNumber;
+    fn decNumberLog10(res: *mut decNumber,
+                      rhs: *const decNumber,
+                      ctx: *mut Context)
+                      -> *mut decNumber;
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::BTreeMap;
 
+    #[cfg(feature = "ord_subset")]
+    use ord_subset;
+
+    #[cfg(feature = "rustc-serialize")]
     use rustc_serialize::json;
+
+    #[cfg(feature = "ord_subset")]
+    #[test]
+    #[should_panic]
+    fn test_ord_subset_nan() {
+        ord_subset::OrdVar::new(d128!(NaN));
+    }
+
+    #[cfg(feature = "ord_subset")]
+    #[test]
+    #[should_panic]
+    fn test_ord_subset_qnan() {
+        ord_subset::OrdVar::new(d128!(qNaN));
+    }
+
+    #[cfg(feature = "ord_subset")]
+    #[test]
+    fn test_ord_subset_zero() {
+        assert_eq!(*ord_subset::OrdVar::new(d128::zero()), d128::zero());
+    }
+
+    #[cfg(feature = "ord_subset")]
+    #[test]
+    fn test_into_for_btreemap() {
+        let mut m = BTreeMap::<ord_subset::OrdVar<d128>, i64>::new();
+        m.insert(d128!(1.1).into(), 1);
+        assert_eq!(m[&d128!(1.1).into()], 1);
+    }
 
     #[cfg(feature = "rustc-serialize")]
     #[test]
@@ -783,6 +933,25 @@ mod tests {
         assert_eq!(d128!(3.33), &d128!(1.11) + d128!(2.22));
         assert_eq!(d128!(3.33), d128!(1.11) + &d128!(2.22));
         assert_eq!(d128!(3.33), &d128!(1.11) + &d128!(2.22));
+        assert_eq!(d128!(5) << 2, d128!(500));
+        assert_eq!(d128!(500) >> 1, d128!(50));
+    }
+
+    #[test]
+    fn assign_op() {
+        let mut x = d128!(1);
+        x += d128!(2);
+        assert_eq!(x, d128!(3));
+        x *= d128!(3);
+        assert_eq!(x, d128!(9));
+        x -= d128!(1);
+        assert_eq!(x, d128!(8));
+        x /= d128!(16);
+        assert_eq!(x, d128!(0.5));
+        x <<= 2;
+        assert_eq!(x, d128!(50));
+        x >>= 1;
+        assert_eq!(x, d128!(5));
     }
 
     #[test]

@@ -1,6 +1,9 @@
 #[macro_use]
 extern crate bitflags;
 extern crate libc;
+#[cfg(feature = "ord_subset")]
+extern crate ord_subset;
+#[cfg(feature = "rustc-serialize")]
 extern crate rustc_serialize;
 
 #[macro_export]
@@ -81,7 +84,7 @@ bitflags! {
     /// // The previous status flag was not cleared!
     /// assert!(d128::get_status().contains(decimal::DIVISION_BY_ZERO));
     /// # }
-    flags Status: libc::uint32_t {
+    pub flags Status: ::libc::uint32_t {
         /// Conversion syntax error.
         const CONVERSION_SYNTAX    = 0x00000001,
         /// Division by zero.

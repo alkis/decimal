@@ -505,6 +505,7 @@ fn run_test<'a>(env: &Environment, test: Test<'a>) -> TestResult<'a> {
         Op::NextPlus(a) => simple_op!(test, value = next(a)),
         Op::NextToward(a, b) => simple_op!(test, value = towards(a, b)),
         Op::Or(a, b) => simple_op!(test, value = bitor(a, b)),
+        Op::Power(a, b) => simple_op!(test, value = pow(a, b)),
         Op::Quantize(a, b) => simple_op!(test, value = quantize(a, b)),
         Op::Reduce(a) => simple_op!(test, value = reduce(a)),
         Op::Remainder(a, b) => simple_op!(test, value = rem(a, b)),
