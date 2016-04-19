@@ -23,7 +23,7 @@ extern crate rustc_serialize;
 /// ```
 macro_rules! d128 {
     ($lit:expr) => {{
-        ::std::mem::transmute::<[uint8_t; 16], d128>(dmacros_d128!($lit))
+        unsafe { ::std::mem::transmute::<[_; 16], d128>(dmacros_d128!($lit)) }
     }}
 }
 

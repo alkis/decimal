@@ -50,7 +50,7 @@ fn d128_lit<'cx>(cx: &'cx mut ExtCtxt, sp: Span, tts: &[TokenTree]) -> Box<MacRe
         },
         _ => {}
     }
-    cx.span_err(sp, "not a valid number");
+    cx.span_err(sp, "not a valid d128 number");
     DummyResult::any(sp)
 }
 
@@ -99,7 +99,6 @@ fn from_str(s: &str) -> Result<[uint8_t; 16], &'static str> {
         decQuadFromString(&mut res, cstr.as_ptr(), &mut ctx);
     }
     if ctx.status & 0x00000001 != 0 { // CONVERSION_SYNTAX
-        println!("ctx.status: {:#x}, ctx: {:?}", ctx.status, ctx);
         Err("not a valid d128 number")
     } else if ctx.status & 0x00000200 != 0 { // OVERFLOW
         Err("too large for a d128 number")

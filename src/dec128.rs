@@ -880,14 +880,14 @@ mod tests {
     #[cfg(feature = "rustc-serialize")]
     use rustc_serialize::json;
 
-    #[cfg(feature = "ord_subset")]
+    #[cfg(all(not(feature = "constant_macros"), feature = "ord_subset"))]
     #[test]
     #[should_panic]
     fn test_ord_subset_nan() {
         ord_subset::OrdVar::new(d128!(NaN));
     }
 
-    #[cfg(feature = "ord_subset")]
+    #[cfg(all(not(feature = "constant_macros"), feature = "ord_subset"))]
     #[test]
     #[should_panic]
     fn test_ord_subset_qnan() {
