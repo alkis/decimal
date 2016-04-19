@@ -1,7 +1,0 @@
-[package]
-name = "decimal-common"
-version = "0.1.0"
-authors = ["Callum <cgtrolley@gmail.com>"]
-
-[lib]
-name = "decimal_common"
