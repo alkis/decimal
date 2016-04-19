@@ -1,0 +1,15 @@
+[package]
+name = "decimal-macros"
+version = "0.1.0"
+authors = ["Callum <cgtrolley@gmail.com>"]
+build = "build.rs"
+
+[lib]
+name = "decimal_macros"
+plugin = true
+
+[dependencies]
+libc = "~0.2"
+
+[build-dependencies]
+gcc = "~0.3"

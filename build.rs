@@ -19,5 +19,6 @@ fn main() {
         .file("decNumber/decimal64.c")
         .define("DECNUMDIGITS", Some("34"))
         .define("DECLITEND", Some(litend))
+        .define("DECSUBSET", Some("1"))
         .compile("libdecNumber.a");
 }

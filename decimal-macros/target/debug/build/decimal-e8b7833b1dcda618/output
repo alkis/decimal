@@ -1,0 +1,201 @@
+TARGET = Some("x86_64-pc-windows-gnu")
+OPT_LEVEL = Some("0")
+PROFILE = Some("debug")
+TARGET = Some("x86_64-pc-windows-gnu")
+debug=true opt-level=0
+HOST = Some("x86_64-pc-windows-gnu")
+TARGET = Some("x86_64-pc-windows-gnu")
+TARGET = Some("x86_64-pc-windows-gnu")
+HOST = Some("x86_64-pc-windows-gnu")
+CC_x86_64-pc-windows-gnu = None
+CC_x86_64_pc_windows_gnu = None
+HOST_CC = None
+CC = None
+TARGET = Some("x86_64-pc-windows-gnu")
+HOST = Some("x86_64-pc-windows-gnu")
+CFLAGS_x86_64-pc-windows-gnu = None
+CFLAGS_x86_64_pc_windows_gnu = None
+HOST_CFLAGS = None
+CFLAGS = None
+running: "gcc.exe" "-O0" "-ffunction-sections" "-fdata-sections" "-g" "-m64" "-I" "decNumber" "-DDECNUMDIGITS=34" "-DDECLITEND=1" "-o" "C:\\Dev\\Rust\\Projects\\decimal\\decimal-macros\\target\\debug\\build\\decimal-e8b7833b1dcda618\\out\\decNumber\\decContext.o" "-c" "decNumber/decContext.c"
+ExitStatus(ExitStatus(0))
+TARGET = Some("x86_64-pc-windows-gnu")
+OPT_LEVEL = Some("0")
+PROFILE = Some("debug")
+TARGET = Some("x86_64-pc-windows-gnu")
+debug=true opt-level=0
+HOST = Some("x86_64-pc-windows-gnu")
+TARGET = Some("x86_64-pc-windows-gnu")
+TARGET = Some("x86_64-pc-windows-gnu")
+HOST = Some("x86_64-pc-windows-gnu")
+CC_x86_64-pc-windows-gnu = None
+CC_x86_64_pc_windows_gnu = None
+HOST_CC = None
+CC = None
+TARGET = Some("x86_64-pc-windows-gnu")
+HOST = Some("x86_64-pc-windows-gnu")
+CFLAGS_x86_64-pc-windows-gnu = None
+CFLAGS_x86_64_pc_windows_gnu = None
+HOST_CFLAGS = None
+CFLAGS = None
+running: "gcc.exe" "-O0" "-ffunction-sections" "-fdata-sections" "-g" "-m64" "-I" "decNumber" "-DDECNUMDIGITS=34" "-DDECLITEND=1" "-o" "C:\\Dev\\Rust\\Projects\\decimal\\decimal-macros\\target\\debug\\build\\decimal-e8b7833b1dcda618\\out\\decNumber\\decDouble.o" "-c" "decNumber/decDouble.c"
+ExitStatus(ExitStatus(0))
+TARGET = Some("x86_64-pc-windows-gnu")
+OPT_LEVEL = Some("0")
+PROFILE = Some("debug")
+TARGET = Some("x86_64-pc-windows-gnu")
+debug=true opt-level=0
+HOST = Some("x86_64-pc-windows-gnu")
+TARGET = Some("x86_64-pc-windows-gnu")
+TARGET = Some("x86_64-pc-windows-gnu")
+HOST = Some("x86_64-pc-windows-gnu")
+CC_x86_64-pc-windows-gnu = None
+CC_x86_64_pc_windows_gnu = None
+HOST_CC = None
+CC = None
+TARGET = Some("x86_64-pc-windows-gnu")
+HOST = Some("x86_64-pc-windows-gnu")
+CFLAGS_x86_64-pc-windows-gnu = None
+CFLAGS_x86_64_pc_windows_gnu = None
+HOST_CFLAGS = None
+CFLAGS = None
+running: "gcc.exe" "-O0" "-ffunction-sections" "-fdata-sections" "-g" "-m64" "-I" "decNumber" "-DDECNUMDIGITS=34" "-DDECLITEND=1" "-o" "C:\\Dev\\Rust\\Projects\\decimal\\decimal-macros\\target\\debug\\build\\decimal-e8b7833b1dcda618\\out\\decNumber\\decNumber.o" "-c" "decNumber/decNumber.c"
+ExitStatus(ExitStatus(0))
+TARGET = Some("x86_64-pc-windows-gnu")
+OPT_LEVEL = Some("0")
+PROFILE = Some("debug")
+TARGET = Some("x86_64-pc-windows-gnu")
+debug=true opt-level=0
+HOST = Some("x86_64-pc-windows-gnu")
+TARGET = Some("x86_64-pc-windows-gnu")
+TARGET = Some("x86_64-pc-windows-gnu")
+HOST = Some("x86_64-pc-windows-gnu")
+CC_x86_64-pc-windows-gnu = None
+CC_x86_64_pc_windows_gnu = None
+HOST_CC = None
+CC = None
+TARGET = Some("x86_64-pc-windows-gnu")
+HOST = Some("x86_64-pc-windows-gnu")
+CFLAGS_x86_64-pc-windows-gnu = None
+CFLAGS_x86_64_pc_windows_gnu = None
+HOST_CFLAGS = None
+CFLAGS = None
+running: "gcc.exe" "-O0" "-ffunction-sections" "-fdata-sections" "-g" "-m64" "-I" "decNumber" "-DDECNUMDIGITS=34" "-DDECLITEND=1" "-o" "C:\\Dev\\Rust\\Projects\\decimal\\decimal-macros\\target\\debug\\build\\decimal-e8b7833b1dcda618\\out\\decNumber\\decPacked.o" "-c" "decNumber/decPacked.c"
+ExitStatus(ExitStatus(0))
+TARGET = Some("x86_64-pc-windows-gnu")
+OPT_LEVEL = Some("0")
+PROFILE = Some("debug")
+TARGET = Some("x86_64-pc-windows-gnu")
+debug=true opt-level=0
+HOST = Some("x86_64-pc-windows-gnu")
+TARGET = Some("x86_64-pc-windows-gnu")
+TARGET = Some("x86_64-pc-windows-gnu")
+HOST = Some("x86_64-pc-windows-gnu")
+CC_x86_64-pc-windows-gnu = None
+CC_x86_64_pc_windows_gnu = None
+HOST_CC = None
+CC = None
+TARGET = Some("x86_64-pc-windows-gnu")
+HOST = Some("x86_64-pc-windows-gnu")
+CFLAGS_x86_64-pc-windows-gnu = None
+CFLAGS_x86_64_pc_windows_gnu = None
+HOST_CFLAGS = None
+CFLAGS = None
+running: "gcc.exe" "-O0" "-ffunction-sections" "-fdata-sections" "-g" "-m64" "-I" "decNumber" "-DDECNUMDIGITS=34" "-DDECLITEND=1" "-o" "C:\\Dev\\Rust\\Projects\\decimal\\decimal-macros\\target\\debug\\build\\decimal-e8b7833b1dcda618\\out\\decNumber\\decQuad.o" "-c" "decNumber/decQuad.c"
+ExitStatus(ExitStatus(0))
+TARGET = Some("x86_64-pc-windows-gnu")
+OPT_LEVEL = Some("0")
+PROFILE = Some("debug")
+TARGET = Some("x86_64-pc-windows-gnu")
+debug=true opt-level=0
+HOST = Some("x86_64-pc-windows-gnu")
+TARGET = Some("x86_64-pc-windows-gnu")
+TARGET = Some("x86_64-pc-windows-gnu")
+HOST = Some("x86_64-pc-windows-gnu")
+CC_x86_64-pc-windows-gnu = None
+CC_x86_64_pc_windows_gnu = None
+HOST_CC = None
+CC = None
+TARGET = Some("x86_64-pc-windows-gnu")
+HOST = Some("x86_64-pc-windows-gnu")
+CFLAGS_x86_64-pc-windows-gnu = None
+CFLAGS_x86_64_pc_windows_gnu = None
+HOST_CFLAGS = None
+CFLAGS = None
+running: "gcc.exe" "-O0" "-ffunction-sections" "-fdata-sections" "-g" "-m64" "-I" "decNumber" "-DDECNUMDIGITS=34" "-DDECLITEND=1" "-o" "C:\\Dev\\Rust\\Projects\\decimal\\decimal-macros\\target\\debug\\build\\decimal-e8b7833b1dcda618\\out\\decNumber\\decSingle.o" "-c" "decNumber/decSingle.c"
+ExitStatus(ExitStatus(0))
+TARGET = Some("x86_64-pc-windows-gnu")
+OPT_LEVEL = Some("0")
+PROFILE = Some("debug")
+TARGET = Some("x86_64-pc-windows-gnu")
+debug=true opt-level=0
+HOST = Some("x86_64-pc-windows-gnu")
+TARGET = Some("x86_64-pc-windows-gnu")
+TARGET = Some("x86_64-pc-windows-gnu")
+HOST = Some("x86_64-pc-windows-gnu")
+CC_x86_64-pc-windows-gnu = None
+CC_x86_64_pc_windows_gnu = None
+HOST_CC = None
+CC = None
+TARGET = Some("x86_64-pc-windows-gnu")
+HOST = Some("x86_64-pc-windows-gnu")
+CFLAGS_x86_64-pc-windows-gnu = None
+CFLAGS_x86_64_pc_windows_gnu = None
+HOST_CFLAGS = None
+CFLAGS = None
+running: "gcc.exe" "-O0" "-ffunction-sections" "-fdata-sections" "-g" "-m64" "-I" "decNumber" "-DDECNUMDIGITS=34" "-DDECLITEND=1" "-o" "C:\\Dev\\Rust\\Projects\\decimal\\decimal-macros\\target\\debug\\build\\decimal-e8b7833b1dcda618\\out\\decNumber\\decimal128.o" "-c" "decNumber/decimal128.c"
+ExitStatus(ExitStatus(0))
+TARGET = Some("x86_64-pc-windows-gnu")
+OPT_LEVEL = Some("0")
+PROFILE = Some("debug")
+TARGET = Some("x86_64-pc-windows-gnu")
+debug=true opt-level=0
+HOST = Some("x86_64-pc-windows-gnu")
+TARGET = Some("x86_64-pc-windows-gnu")
+TARGET = Some("x86_64-pc-windows-gnu")
+HOST = Some("x86_64-pc-windows-gnu")
+CC_x86_64-pc-windows-gnu = None
+CC_x86_64_pc_windows_gnu = None
+HOST_CC = None
+CC = None
+TARGET = Some("x86_64-pc-windows-gnu")
+HOST = Some("x86_64-pc-windows-gnu")
+CFLAGS_x86_64-pc-windows-gnu = None
+CFLAGS_x86_64_pc_windows_gnu = None
+HOST_CFLAGS = None
+CFLAGS = None
+running: "gcc.exe" "-O0" "-ffunction-sections" "-fdata-sections" "-g" "-m64" "-I" "decNumber" "-DDECNUMDIGITS=34" "-DDECLITEND=1" "-o" "C:\\Dev\\Rust\\Projects\\decimal\\decimal-macros\\target\\debug\\build\\decimal-e8b7833b1dcda618\\out\\decNumber\\decimal32.o" "-c" "decNumber/decimal32.c"
+ExitStatus(ExitStatus(0))
+TARGET = Some("x86_64-pc-windows-gnu")
+OPT_LEVEL = Some("0")
+PROFILE = Some("debug")
+TARGET = Some("x86_64-pc-windows-gnu")
+debug=true opt-level=0
+HOST = Some("x86_64-pc-windows-gnu")
+TARGET = Some("x86_64-pc-windows-gnu")
+TARGET = Some("x86_64-pc-windows-gnu")
+HOST = Some("x86_64-pc-windows-gnu")
+CC_x86_64-pc-windows-gnu = None
+CC_x86_64_pc_windows_gnu = None
+HOST_CC = None
+CC = None
+TARGET = Some("x86_64-pc-windows-gnu")
+HOST = Some("x86_64-pc-windows-gnu")
+CFLAGS_x86_64-pc-windows-gnu = None
+CFLAGS_x86_64_pc_windows_gnu = None
+HOST_CFLAGS = None
+CFLAGS = None
+running: "gcc.exe" "-O0" "-ffunction-sections" "-fdata-sections" "-g" "-m64" "-I" "decNumber" "-DDECNUMDIGITS=34" "-DDECLITEND=1" "-o" "C:\\Dev\\Rust\\Projects\\decimal\\decimal-macros\\target\\debug\\build\\decimal-e8b7833b1dcda618\\out\\decNumber\\decimal64.o" "-c" "decNumber/decimal64.c"
+ExitStatus(ExitStatus(0))
+TARGET = Some("x86_64-pc-windows-gnu")
+TARGET = Some("x86_64-pc-windows-gnu")
+HOST = Some("x86_64-pc-windows-gnu")
+AR_x86_64-pc-windows-gnu = None
+AR_x86_64_pc_windows_gnu = None
+HOST_AR = None
+AR = None
+TARGET = Some("x86_64-pc-windows-gnu")
+running: "ar" "crus" "C:\\Dev\\Rust\\Projects\\decimal\\decimal-macros\\target\\debug\\build\\decimal-e8b7833b1dcda618\\out\\libdecNumber.a" "C:\\Dev\\Rust\\Projects\\decimal\\decimal-macros\\target\\debug\\build\\decimal-e8b7833b1dcda618\\out\\decNumber\\decContext.o" "C:\\Dev\\Rust\\Projects\\decimal\\decimal-macros\\target\\debug\\build\\decimal-e8b7833b1dcda618\\out\\decNumber\\decDouble.o" "C:\\Dev\\Rust\\Projects\\decimal\\decimal-macros\\target\\debug\\build\\decimal-e8b7833b1dcda618\\out\\decNumber\\decNumber.o" "C:\\Dev\\Rust\\Projects\\decimal\\decimal-macros\\target\\debug\\build\\decimal-e8b7833b1dcda618\\out\\decNumber\\decPacked.o" "C:\\Dev\\Rust\\Projects\\decimal\\decimal-macros\\target\\debug\\build\\decimal-e8b7833b1dcda618\\out\\decNumber\\decQuad.o" "C:\\Dev\\Rust\\Projects\\decimal\\decimal-macros\\target\\debug\\build\\decimal-e8b7833b1dcda618\\out\\decNumber\\decSingle.o" "C:\\Dev\\Rust\\Projects\\decimal\\decimal-macros\\target\\debug\\build\\decimal-e8b7833b1dcda618\\out\\decNumber\\decimal128.o" "C:\\Dev\\Rust\\Projects\\decimal\\decimal-macros\\target\\debug\\build\\decimal-e8b7833b1dcda618\\out\\decNumber\\decimal32.o" "C:\\Dev\\Rust\\Projects\\decimal\\decimal-macros\\target\\debug\\build\\decimal-e8b7833b1dcda618\\out\\decNumber\\decimal64.o"
+ExitStatus(ExitStatus(0))
+cargo:rustc-link-lib=static=decNumber
+cargo:rustc-link-search=native=C:\Dev\Rust\Projects\decimal\decimal-macros\target\debug\build\decimal-e8b7833b1dcda618\out

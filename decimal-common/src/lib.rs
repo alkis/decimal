@@ -1,57 +1,21 @@
-#![cfg_attr(feature = "constant_macros", feature(plugin))]
-#![cfg_attr(feature = "constant_macros", plugin(decimal_macros))]
-#[macro_use]
-extern crate bitflags;
-extern crate libc;
-#[cfg(feature = "ord_subset")]
-extern crate ord_subset;
-#[cfg(feature = "rustc-serialize")]
-extern crate rustc_serialize;
-
-#[cfg(feature = "constant_macros")]
-/// A macro to construct d128 literals.
-///
-/// # Examples:
-/// ```
-/// # #[macro_use]
-/// # extern crate decimal;
-/// # fn main() {
-/// assert!(d128!(NaN).is_nan());
-/// assert!(d128!(0).is_zero());
-/// assert!(d128!(-0.1).is_negative());
-/// # }
-/// ```
-macro_rules! d128 {
-    ($lit:expr) => {{
-        ::std::mem::transmute::<[uint8_t; 16], d128>(dmacros_d128!($lit))
-    }}
+#[repr(C)]
+#[derive(Clone, Copy)]
+/// A 128-bit decimal floating point type.
+pub struct d128 {
+    bytes: [uint8_t; 16],
 }
 
-#[cfg(not(feature = "constant_macros"))]
-#[macro_export]
-/// A macro to construct d128 literals.
-///
-/// # Examples:
-/// ```
-/// # #[macro_use]
-/// # extern crate decimal;
-/// # fn main() {
-/// assert!(d128!(NaN).is_nan());
-/// assert!(d128!(0).is_zero());
-/// assert!(d128!(-0.1).is_negative());
-/// # }
-/// ```
-macro_rules! d128 {
-    ($lit:expr) => {{
-        use std::str::FromStr;
-        $crate::d128::from_str(stringify!($lit)).expect("Invalid decimal float literal")
-    }}
+#[repr(C)]
+#[derive(Clone, Copy)]
+struct decNumber {
+    digits: i32,
+    exponent: i32,
+    bits: u8,
+    // DECPUN = 3 because this is the fastest for conversion between decNumber and decQuad
+    // DECNUMDIGITS = 34 because we use decQuad only
+    // 12 = ((DECNUMDIGITS+DECDPUN-1)/DECDPUN)
+    lsu: [u16; 12],
 }
-
-mod context;
-mod dec128;
-
-pub use dec128::d128;
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, PartialEq)]
