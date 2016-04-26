@@ -1,17 +1,12 @@
 #![feature(plugin_registrar, rustc_private)]
 
 extern crate libc;
-extern crate decimal;
+#[doc(hidden)]
+pub extern crate decimal;
 
 extern crate rustc_plugin;
 extern crate syntax;
 
-#[doc(hidden)]
-pub use decimal;
-
-use std::ffi::CString;
-
-use libc::{c_char, int32_t, uint8_t, uint32_t};
 use rustc_plugin::Registry;
 use syntax::ext::base::{DummyResult, MacEager, ExtCtxt, MacResult};
 use syntax::ext::build::AstBuilder;
@@ -19,10 +14,10 @@ use syntax::ext::source_util;
 use syntax::codemap::Span;
 use syntax::ast::{ExprKind, TokenTree, LitKind, StrStyle};
 
+use decimal::d128;
+
 fn d128_lit<'cx>(cx: &'cx mut ExtCtxt, sp: Span, tts: &[TokenTree]) -> Box<MacResult + 'cx> {
     let mac_res = source_util::expand_stringify(cx, sp, tts);
-    
-    ec.span_fatal(sp, "test");
     
     let ex = match mac_res.make_expr() {
         Some(ex) => ex,
@@ -46,14 +41,21 @@ fn d128_lit<'cx>(cx: &'cx mut ExtCtxt, sp: Span, tts: &[TokenTree]) -> Box<MacRe
                         return DummyResult::any(sp);
                     }
                 };
+                let num = unsafe { ::std::mem::transmute::<d128, [u8; 16]>(num) };
                 
-                let mut vec = Vec::with_capacity(16);
+                let mut vec: String = "".into();
                 for i in 0..16 {
-                    vec.push(cx.expr_u8(lit.span, 0/*num[i]*/));
+                    vec.push_str(&format!("{},", num[i]));
                 }
-                let arr = cx.expr_vec(sp, vec);
                 
-                return MacEager::expr(arr);
+                let ex = syntax::parse::parse_expr_from_source_str(
+                    "".into(),
+                    format!("::decimal_macros::decimal::d128::from_bytes([{}])", vec),
+                    cx.cfg(),
+                    cx.parse_sess()
+                ).unwrap();
+
+                return MacEager::expr(ex);
             },
             _ => {}
         },
@@ -68,31 +70,20 @@ pub fn plugin_registrar(reg: &mut Registry) {
     reg.register_macro("d128", d128_lit)
 }
 
-fn from_str(s: &str) -> Result<[uint8_t; 16], &'static str> {
-    let cstr = match CString::new(s) {
-        Err(..)  => return Err("not a valid d128 number"),
-        Ok(cstr) => cstr,
-    };
-    let mut ctx = default_context();
-    let mut res: [uint8_t; 16];
-    unsafe {
-        res = std::mem::uninitialized();
-        decQuadFromString(&mut res, cstr.as_ptr(), &mut ctx);
-    }
-    if ctx.status & 0x00000001 != 0 { // CONVERSION_SYNTAX
+fn from_str(s: &str) -> Result<d128, &'static str> {
+    use std::str::FromStr;
+    let res = d128::from_str(s);
+    
+    let status = d128::get_status();
+    if status.contains(decimal::CONVERSION_SYNTAX) {
         Err("not a valid d128 number")
-    } else if ctx.status & 0x00000200 != 0 { // OVERFLOW
+    } else if status.contains(decimal::OVERFLOW) {
         Err("too large for a d128 number")
-    } else if ctx.status & 0x00002000 != 0 { // UNDERFLOW
+    } else if status.contains(decimal::UNDERFLOW) {
         Err("too small for a d128 number")
-    } else if ctx.status != 0 {
+    } else if !status.is_empty() {
         Err("not a valid d128 number")
     } else {
-        Ok(res)
+        Ok(res.unwrap())
     }
-}
-
-#[cfg(test)]
-mod tests {
-    
 }

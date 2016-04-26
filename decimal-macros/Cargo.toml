@@ -2,7 +2,6 @@
 name = "decimal-macros"
 version = "0.1.0"
 authors = ["Callum Tolley <cgtrolley@gmail.com>"]
-build = "build.rs"
 
 [lib]
 name = "decimal_macros"

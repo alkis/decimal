@@ -1,11 +1,10 @@
-#[feature(plugin)]
-#[plugin(decimal_macros)]
-extern crate decimal_macros;
+#![feature(plugin)]
+#![plugin(decimal_macros)]
 
 fn main() {
     let a = d128!(0.1);
-    let a = d128!(0.2);
-    let a = d128!(0.3);
+    let b = d128!(0.2);
+    let c = d128!(0.3);
     let res = a - b;
     let eq = res == c;
     if eq {
