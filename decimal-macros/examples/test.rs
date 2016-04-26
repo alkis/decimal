@@ -1,5 +1,8 @@
 #![feature(plugin)]
 #![plugin(decimal_macros)]
+extern crate decimal;
+
+use decimal::d128;
 
 fn main() {
     let a = d128!(0.1);

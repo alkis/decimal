@@ -43,17 +43,13 @@ fn d128_lit<'cx>(cx: &'cx mut ExtCtxt, sp: Span, tts: &[TokenTree]) -> Box<MacRe
                 };
                 let num = unsafe { ::std::mem::transmute::<d128, [u8; 16]>(num) };
                 
-                let mut vec: String = "".into();
+                let mut vec = Vec::new();
                 for i in 0..16 {
-                    vec.push_str(&format!("{},", num[i]));
+                    vec.push(cx.expr_u8(lit.span, num[i]));
                 }
-                
-                let ex = syntax::parse::parse_expr_from_source_str(
-                    "".into(),
-                    format!("::decimal_macros::decimal::d128::from_bytes([{}])", vec),
-                    cx.cfg(),
-                    cx.parse_sess()
-                ).unwrap();
+                let vec = cx.expr_vec(lit.span, vec);
+                let ids = vec![cx.ident_of("decimal"), cx.ident_of("d128"), cx.ident_of("from_bytes")];
+                let ex = cx.expr_call_global(lit.span, ids, vec![vec]);
 
                 return MacEager::expr(ex);
             },
