@@ -56,7 +56,7 @@ fn d128_lit<'cx>(cx: &'cx mut ExtCtxt, sp: Span, tts: &[TokenTree]) -> Box<MacRe
 
 #[plugin_registrar]
 pub fn plugin_registrar(reg: &mut Registry) {
-    reg.register_macro("dmacros_d128", d128_lit)
+    reg.register_macro("d128", d128_lit)
 }
 
 #[repr(C)]
