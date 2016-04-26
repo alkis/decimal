@@ -1,5 +1,3 @@
-#![cfg_attr(feature = "constant_macros", feature(plugin))]
-#![cfg_attr(feature = "constant_macros", plugin(decimal_macros))]
 #[macro_use]
 extern crate bitflags;
 extern crate libc;
@@ -8,27 +6,6 @@ extern crate ord_subset;
 #[cfg(feature = "rustc-serialize")]
 extern crate rustc_serialize;
 
-#[cfg(feature = "constant_macros")]
-#[macro_export]
-/// A macro to construct d128 literals.
-///
-/// # Examples:
-/// ```
-/// # #[macro_use]
-/// # extern crate decimal;
-/// # fn main() {
-/// assert!(d128!(NaN).is_nan());
-/// assert!(d128!(0).is_zero());
-/// assert!(d128!(-0.1).is_negative());
-/// # }
-/// ```
-macro_rules! d128 {
-    ($lit:expr) => {{
-        unsafe { ::std::mem::transmute::<[_; 16], d128>(dmacros_d128!($lit)) }
-    }}
-}
-
-#[cfg(not(feature = "constant_macros"))]
 #[macro_export]
 /// A macro to construct d128 literals.
 ///

@@ -1,8 +1,13 @@
 #![feature(plugin_registrar, rustc_private)]
 
+extern crate libc;
+extern crate decimal;
+
 extern crate rustc_plugin;
 extern crate syntax;
-extern crate libc;
+
+#[doc(hidden)]
+pub use decimal;
 
 use std::ffi::CString;
 
@@ -16,6 +21,8 @@ use syntax::ast::{ExprKind, TokenTree, LitKind, StrStyle};
 
 fn d128_lit<'cx>(cx: &'cx mut ExtCtxt, sp: Span, tts: &[TokenTree]) -> Box<MacResult + 'cx> {
     let mac_res = source_util::expand_stringify(cx, sp, tts);
+    
+    ec.span_fatal(sp, "test");
     
     let ex = match mac_res.make_expr() {
         Some(ex) => ex,
@@ -42,9 +49,11 @@ fn d128_lit<'cx>(cx: &'cx mut ExtCtxt, sp: Span, tts: &[TokenTree]) -> Box<MacRe
                 
                 let mut vec = Vec::with_capacity(16);
                 for i in 0..16 {
-                    vec.push(cx.expr_u8(lit.span, num[i]));
+                    vec.push(cx.expr_u8(lit.span, 0/*num[i]*/));
                 }
-                return MacEager::expr(cx.expr_vec(sp, vec));
+                let arr = cx.expr_vec(sp, vec);
+                
+                return MacEager::expr(arr);
             },
             _ => {}
         },
@@ -57,34 +66,6 @@ fn d128_lit<'cx>(cx: &'cx mut ExtCtxt, sp: Span, tts: &[TokenTree]) -> Box<MacRe
 #[plugin_registrar]
 pub fn plugin_registrar(reg: &mut Registry) {
     reg.register_macro("d128", d128_lit)
-}
-
-#[repr(C)]
-#[derive(Clone, Copy, Debug, PartialEq)]
-struct Context {
-    digits: int32_t,
-    emax: int32_t,
-    emin: int32_t,
-    rounding: Rounding,
-    traps: uint32_t,
-    status: uint32_t,
-    clamp: uint8_t,
-}
-
-#[repr(C)]
-#[derive(Clone, Copy, Debug, PartialEq)]
-#[allow(dead_code)]
-enum Rounding {
-    Ceiling = 0,
-    Up,
-    HalfUp,
-    /// Round to nearest; if equidistant, round so that the final digit is even.
-    /// This is the only rounding mode supported.
-    HalfEven,
-    HalfDown,
-    Down,
-    Floor,
-    ZeroOrFiveUp,
 }
 
 fn from_str(s: &str) -> Result<[uint8_t; 16], &'static str> {
@@ -111,14 +92,7 @@ fn from_str(s: &str) -> Result<[uint8_t; 16], &'static str> {
     }
 }
 
-fn default_context() -> Context {
-    unsafe {
-        let mut res: Context = std::mem::uninitialized();
-        *decContextDefault(&mut res, 128)
-    }
-}
-
-extern "C" {
-    fn decContextDefault(ctx: *mut Context, kind: uint32_t) -> *mut Context;
-    fn decQuadFromString(res: *mut [uint8_t; 16], s: *const c_char, ctx: *mut Context) -> *mut [uint8_t; 16];
+#[cfg(test)]
+mod tests {
+    
 }

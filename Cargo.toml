@@ -14,11 +14,9 @@ bitflags = "~0.5"
 libc = "~0.2"
 ord_subset = { optional = true, version = "~1.2" }
 rustc-serialize = { optional = true, version = "~0.3" }
-decimal-macros = { optional = true, path = "decimal-macros/" }
 
 [features]
 default = ["ord_subset", "rustc-serialize"]
-constant_macros = ["decimal-macros"]
 
 [build-dependencies]
 gcc = "~0.3"

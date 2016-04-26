@@ -1,7 +1,7 @@
 [package]
 name = "decimal-macros"
 version = "0.1.0"
-authors = ["Callum <cgtrolley@gmail.com>"]
+authors = ["Callum Tolley <cgtrolley@gmail.com>"]
 build = "build.rs"
 
 [lib]
@@ -9,6 +9,7 @@ name = "decimal_macros"
 plugin = true
 
 [dependencies]
+decimal = { path = "../" }
 libc = "~0.2"
 
 [build-dependencies]
