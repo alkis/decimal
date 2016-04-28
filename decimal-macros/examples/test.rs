@@ -8,7 +8,7 @@ fn main() {
     let a = d128!(0.1);
     let b = d128!(0.2);
     let c = d128!(0.3);
-    let res = a - b;
+    let res = a + b;
     let eq = res == c;
     if eq {
         println!("{} + {} = {}", a, b, res);
