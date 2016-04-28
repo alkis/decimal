@@ -1,18 +1,20 @@
 #![feature(plugin_registrar, rustc_private)]
 
+extern crate libc;
+#[doc(hidden)]
+pub extern crate decimal;
+
 extern crate rustc_plugin;
 extern crate syntax;
-extern crate libc;
 
-use std::ffi::CString;
-
-use libc::{c_char, int32_t, uint8_t, uint32_t};
 use rustc_plugin::Registry;
 use syntax::ext::base::{DummyResult, MacEager, ExtCtxt, MacResult};
 use syntax::ext::build::AstBuilder;
 use syntax::ext::source_util;
 use syntax::codemap::Span;
 use syntax::ast::{ExprKind, TokenTree, LitKind, StrStyle};
+
+use decimal::d128;
 
 fn d128_lit<'cx>(cx: &'cx mut ExtCtxt, sp: Span, tts: &[TokenTree]) -> Box<MacResult + 'cx> {
     let mac_res = source_util::expand_stringify(cx, sp, tts);
@@ -39,12 +41,17 @@ fn d128_lit<'cx>(cx: &'cx mut ExtCtxt, sp: Span, tts: &[TokenTree]) -> Box<MacRe
                         return DummyResult::any(sp);
                     }
                 };
+                let num = unsafe { ::std::mem::transmute::<d128, [u8; 16]>(num) };
                 
-                let mut vec = Vec::with_capacity(16);
+                let mut vec = Vec::new();
                 for i in 0..16 {
                     vec.push(cx.expr_u8(lit.span, num[i]));
                 }
-                return MacEager::expr(cx.expr_vec(sp, vec));
+                let vec = cx.expr_vec(lit.span, vec);
+                let ids = vec![cx.ident_of("decimal"), cx.ident_of("d128"), cx.ident_of("from_bytes")];
+                let ex = cx.expr_call_global(lit.span, ids, vec![vec]);
+
+                return MacEager::expr(ex);
             },
             _ => {}
         },
@@ -56,69 +63,23 @@ fn d128_lit<'cx>(cx: &'cx mut ExtCtxt, sp: Span, tts: &[TokenTree]) -> Box<MacRe
 
 #[plugin_registrar]
 pub fn plugin_registrar(reg: &mut Registry) {
-    reg.register_macro("dmacros_d128", d128_lit)
+    reg.register_macro("d128", d128_lit)
 }
 
-#[repr(C)]
-#[derive(Clone, Copy, Debug, PartialEq)]
-struct Context {
-    digits: int32_t,
-    emax: int32_t,
-    emin: int32_t,
-    rounding: Rounding,
-    traps: uint32_t,
-    status: uint32_t,
-    clamp: uint8_t,
-}
-
-#[repr(C)]
-#[derive(Clone, Copy, Debug, PartialEq)]
-#[allow(dead_code)]
-enum Rounding {
-    Ceiling = 0,
-    Up,
-    HalfUp,
-    /// Round to nearest; if equidistant, round so that the final digit is even.
-    /// This is the only rounding mode supported.
-    HalfEven,
-    HalfDown,
-    Down,
-    Floor,
-    ZeroOrFiveUp,
-}
-
-fn from_str(s: &str) -> Result<[uint8_t; 16], &'static str> {
-    let cstr = match CString::new(s) {
-        Err(..)  => return Err("not a valid d128 number"),
-        Ok(cstr) => cstr,
-    };
-    let mut ctx = default_context();
-    let mut res: [uint8_t; 16];
-    unsafe {
-        res = std::mem::uninitialized();
-        decQuadFromString(&mut res, cstr.as_ptr(), &mut ctx);
-    }
-    if ctx.status & 0x00000001 != 0 { // CONVERSION_SYNTAX
+fn from_str(s: &str) -> Result<d128, &'static str> {
+    use std::str::FromStr;
+    let res = d128::from_str(s);
+    
+    let status = d128::get_status();
+    if status.contains(decimal::CONVERSION_SYNTAX) {
         Err("not a valid d128 number")
-    } else if ctx.status & 0x00000200 != 0 { // OVERFLOW
+    } else if status.contains(decimal::OVERFLOW) {
         Err("too large for a d128 number")
-    } else if ctx.status & 0x00002000 != 0 { // UNDERFLOW
+    } else if status.contains(decimal::UNDERFLOW) {
         Err("too small for a d128 number")
-    } else if ctx.status != 0 {
+    } else if !status.is_empty() {
         Err("not a valid d128 number")
     } else {
-        Ok(res)
+        Ok(res.unwrap())
     }
-}
-
-fn default_context() -> Context {
-    unsafe {
-        let mut res: Context = std::mem::uninitialized();
-        *decContextDefault(&mut res, 128)
-    }
-}
-
-extern "C" {
-    fn decContextDefault(ctx: *mut Context, kind: uint32_t) -> *mut Context;
-    fn decQuadFromString(res: *mut [uint8_t; 16], s: *const c_char, ctx: *mut Context) -> *mut [uint8_t; 16];
 }

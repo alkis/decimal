@@ -436,6 +436,15 @@ impl d128 {
             }
         }
     }
+    
+    /// Hidden function for initializing a d128 from an array of bytes. When using this function
+    /// you should be careful about endianness issues.
+    #[doc(hidden)]
+    pub fn from_bytes(bytes: [u8; 16]) -> d128 {
+        d128 {
+            bytes: unsafe { ::std::mem::transmute(bytes) }
+        }
+    }
 
     // Utilities and conversions, extractors, etc.
 
@@ -880,14 +889,14 @@ mod tests {
     #[cfg(feature = "rustc-serialize")]
     use rustc_serialize::json;
 
-    #[cfg(all(not(feature = "constant_macros"), feature = "ord_subset"))]
+    #[cfg(feature = "ord_subset")]
     #[test]
     #[should_panic]
     fn test_ord_subset_nan() {
         ord_subset::OrdVar::new(d128!(NaN));
     }
 
-    #[cfg(all(not(feature = "constant_macros"), feature = "ord_subset"))]
+    #[cfg(feature = "ord_subset")]
     #[test]
     #[should_panic]
     fn test_ord_subset_qnan() {
