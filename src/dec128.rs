@@ -11,6 +11,7 @@ use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 use std::cell::RefCell;
 use std::ffi::{CStr, CString};
 use std::fmt;
+use std::hash::{Hash, Hasher};
 use std::mem::uninitialized;
 use std::ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Div, DivAssign, Rem, RemAssign,
                Neg, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not, Shl,
@@ -66,6 +67,12 @@ impl Decodable for d128 {
 impl Encodable for d128 {
     fn encode<E: Encoder>(&self, e: &mut E) -> Result<(), E::Error> {
         e.emit_str(&format!("{}", self))
+    }
+}
+
+impl Hash for d128 {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.bytes.hash(state);
     }
 }
 
