@@ -5,6 +5,8 @@ extern crate libc;
 extern crate ord_subset;
 #[cfg(feature = "rustc-serialize")]
 extern crate rustc_serialize;
+#[cfg(feature = "serde")]
+extern crate serde;
 
 #[macro_export]
 /// A macro to construct d128 literals.
