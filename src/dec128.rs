@@ -92,8 +92,7 @@ impl Deserialize for d128 {
     fn deserialize<D>(deserializer: &mut D) -> Result<d128, D::Error>
         where D: Deserializer
     {
-        let s = try!(deserializer.deserialize_str(d128Visitor));
-        Ok(s)
+        deserializer.deserialize_str(d128Visitor)
     }
 }
 
