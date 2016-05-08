@@ -8,6 +8,8 @@ use libc::{c_char, int32_t, uint8_t, uint32_t};
 use ord_subset;
 #[cfg(feature = "rustc-serialize")]
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
+#[cfg(feature = "serde")]
+use serde::{Serialize, Serializer, Deserialize, Deserializer, Error, de};
 use std::cell::RefCell;
 use std::ffi::{CStr, CString};
 use std::fmt;
@@ -73,6 +75,45 @@ impl Encodable for d128 {
 impl Hash for d128 {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.bytes.hash(state);
+    }
+}
+
+#[cfg(feature = "serde")]
+impl Serialize for d128{
+    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        where S: Serializer
+    {
+        serializer.serialize_str(&format!("{}", &self))
+    }
+}
+
+#[cfg(feature = "serde")]
+impl Deserialize for d128 {
+    fn deserialize<D>(deserializer: &mut D) -> Result<d128, D::Error>
+        where D: Deserializer
+    {
+        deserializer.deserialize_str(d128Visitor)
+    }
+}
+
+#[cfg(feature = "serde")]
+#[allow(non_camel_case_types)]
+struct d128Visitor;
+
+#[cfg(feature = "serde")]
+impl de::Visitor for d128Visitor {
+    type Value = d128;
+
+    fn visit_str<E>(&mut self, s: &str) -> Result<d128, E>
+        where E: de::Error
+    {
+        let d = match d128::from_str(s) {
+            Ok(d) => { d }
+            Err(_) => { return Err(E::custom("Failed to convert to d128")); }
+        };
+
+
+        Ok(d)
     }
 }
 
@@ -878,7 +919,9 @@ extern "C" {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(any(feature = "ord_subset", feature = "rustc-serialize"))]
     use super::*;
+    #[cfg(any(feature = "ord_subset", feature = "serde"))]
     use std::collections::BTreeMap;
 
     #[cfg(feature = "ord_subset")]
@@ -886,6 +929,9 @@ mod tests {
 
     #[cfg(feature = "rustc-serialize")]
     use rustc_serialize::json;
+
+    #[cfg(feature = "serde")]
+    use serde_json::{from_str, to_string};
 
     #[cfg(feature = "ord_subset")]
     #[test]
@@ -925,6 +971,18 @@ mod tests {
         let a = Test { price: d128!(12.3456) };
         assert_eq!(json::encode(&a).unwrap(), "{\"price\":\"12.3456\"}");
         let b = json::decode("{\"price\":\"12.3456\"}").unwrap();
+        assert_eq!(a, b);
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn test_serde() {
+        let mut a = BTreeMap::new();
+        a.insert("price".to_string(), d128!(432.232));
+        a.insert("amt".to_string(), d128!(9.9));
+        assert_eq!(&to_string(&a).unwrap(),
+            "{\"amt\":\"9.9\",\"price\":\"432.232\"}");
+        let b = from_str("{\"price\":\"432.232\",\"amt\":\"9.9\"}").unwrap();
         assert_eq!(a, b);
     }
 
