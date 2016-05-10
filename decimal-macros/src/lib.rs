@@ -1,8 +1,7 @@
 #![feature(plugin_registrar, rustc_private)]
 
 extern crate libc;
-#[doc(hidden)]
-pub extern crate decimal;
+extern crate decimal;
 
 extern crate rustc_plugin;
 extern crate syntax;
