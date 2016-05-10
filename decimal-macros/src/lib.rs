@@ -76,6 +76,7 @@ pub fn plugin_registrar(reg: &mut Registry) {
 
 fn from_str(s: &str) -> Result<d128, &'static str> {
     use std::str::FromStr;
+    d128::set_status(decimal::Status::empty());
     let res = d128::from_str(s);
     
     let status = d128::get_status();
