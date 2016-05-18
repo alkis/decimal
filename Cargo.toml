@@ -10,7 +10,7 @@ keywords = ["decimal", "decNumber"]
 license = "Apache-2.0"
 
 [dependencies]
-bitflags = "~0.5"
+bitflags = "~0.7"
 libc = "~0.2"
 ord_subset = { optional = true, version = "~1.2" }
 rustc-serialize = { optional = true, version = "~0.3" }
