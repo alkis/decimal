@@ -14,4 +14,6 @@ fn main() {
         println!("{} + {} = {} (expected {})", a, b, res, c);
     }
     assert!(eq);
+    
+    assert_eq!(d128!(0.1), d128!(1) / d128!(10));
 }
