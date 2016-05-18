@@ -32,7 +32,6 @@ fn d128_lit<'cx>(cx: &'cx mut ExtCtxt, sp: Span, tts: &[TokenTree]) -> Box<MacRe
     match &ex.node {
         &ExprKind::Lit(ref lit) => match &lit.node {
             &LitKind::Str(ref s, StrStyle::Cooked) => {
-                //cx.span_warn(lit.span, &format!("Parsing \"{}\"...", s));
                 // Check for empty argument
                 if (*s).len() == 0 {
                     cx.span_err(sp, "one argument needed");
@@ -44,10 +43,8 @@ fn d128_lit<'cx>(cx: &'cx mut ExtCtxt, sp: Span, tts: &[TokenTree]) -> Box<MacRe
                         cx.span_err(lit.span, s);
                         return DummyResult::any(sp);
                     }
-                }; 
+                };
                 let num = unsafe { ::std::mem::transmute::<d128, [u8; 16]>(num) };
-                
-                // cx.span_warn(lit.span, &format!("{} -> {:?}", s, num));
                 
                 // Create array literal
                 let mut vec = Vec::new();
@@ -56,7 +53,7 @@ fn d128_lit<'cx>(cx: &'cx mut ExtCtxt, sp: Span, tts: &[TokenTree]) -> Box<MacRe
                 }
                 let vec = cx.expr_vec(lit.span, vec);
                 let ids = vec![cx.ident_of("decimal"), cx.ident_of("d128"), cx.ident_of("from_bytes")];
-                let ex = cx.expr_call_global(lit.span, ids, vec![vec]); // Call ::decimal::d128::from_bytes with array literal
+                let ex = cx.expr_call_global(lit.span, ids, vec![vec]);
                 
                 return MacEager::expr(ex);
             },
