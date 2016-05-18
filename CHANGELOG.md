@@ -1,3 +1,8 @@
+## 0.5.0 (2016-05-18)
+
+- implement the Hash trait (thanks to Mark Edward Sinclair)
+- serde support (thanks to Mark Edward Sinclair)
+
 ## 0.4.0 (2016-04-15)
 
 - add assignment operators (AddAssign, SubAssign, etc).
