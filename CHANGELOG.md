@@ -1,3 +1,7 @@
+## 1.0.0 (2016-01-22)
+
+- nothing new added, marking as 1.0.0 as the api has reached maturity
+
 ## 0.5.0 (2016-05-18)
 
 - implement the Hash trait (thanks to Mark Edward Sinclair)
