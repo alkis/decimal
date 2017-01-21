@@ -9,7 +9,7 @@ use ord_subset;
 #[cfg(feature = "rustc-serialize")]
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 #[cfg(feature = "serde")]
-use serde::{Serialize, Serializer, Deserialize, Deserializer, Error, de};
+use serde;
 use std::cell::RefCell;
 use std::ffi::{CStr, CString};
 use std::fmt;
@@ -79,18 +79,18 @@ impl Hash for d128 {
 }
 
 #[cfg(feature = "serde")]
-impl Serialize for d128{
+impl serde::ser::Serialize for d128{
     fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
-        where S: Serializer
+        where S: serde::ser::Serializer
     {
         serializer.serialize_str(&format!("{}", &self))
     }
 }
 
 #[cfg(feature = "serde")]
-impl Deserialize for d128 {
+impl serde::de::Deserialize for d128 {
     fn deserialize<D>(deserializer: &mut D) -> Result<d128, D::Error>
-        where D: Deserializer
+        where D: serde::de::Deserializer
     {
         deserializer.deserialize_str(d128Visitor)
     }
@@ -101,11 +101,11 @@ impl Deserialize for d128 {
 struct d128Visitor;
 
 #[cfg(feature = "serde")]
-impl de::Visitor for d128Visitor {
+impl serde::de::Visitor for d128Visitor {
     type Value = d128;
 
     fn visit_str<E>(&mut self, s: &str) -> Result<d128, E>
-        where E: de::Error
+        where E: serde::de::Error
     {
         let d = match d128::from_str(s) {
             Ok(d) => { d }
