@@ -15,9 +15,7 @@ fn main() {
         .file("decNumber/decQuad.c")
         .file("decNumber/decSingle.c")
         .file("decNumber/decimal128.c")
-        .file("decNumber/decimal32.c")
-        .file("decNumber/decimal64.c")
-        .define("DECNUMDIGITS", Some("34"))
+        .file("decNumber/decimal64.c") // for conversion tables
         .define("DECLITEND", Some(litend))
         .compile("libdecNumber.a");
 }
