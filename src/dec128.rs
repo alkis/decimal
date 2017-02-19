@@ -456,6 +456,16 @@ impl d128 {
         CTX.with(|ctx| f(&mut ctx.borrow_mut()))
     }
 
+    /// Creates a d128 from raw bytes. Endianess is host dependent.
+    pub unsafe fn from_raw_bytes(bytes: [u8; 16]) -> d128 {
+        d128 { bytes: bytes }
+    }
+
+    /// Returns raw bytes for this d128. Endianess is host dependent.
+    pub fn to_raw_bytes(&self) -> [u8; 16] {
+        self.bytes
+    }
+
     /// Returns the thread local status.
     pub fn get_status() -> Status {
         d128::with_context(|ctx| Status::from_bits_truncate(ctx.status))
