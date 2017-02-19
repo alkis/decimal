@@ -79,17 +79,17 @@ impl Hash for d128 {
 }
 
 #[cfg(feature = "serde")]
-impl serde::ser::Serialize for d128{
-    fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+impl serde::ser::Serialize for d128 {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: serde::ser::Serializer
     {
-        serializer.serialize_str(&format!("{}", &self))
+        serializer.serialize_str(&self.to_string())
     }
 }
 
 #[cfg(feature = "serde")]
 impl serde::de::Deserialize for d128 {
-    fn deserialize<D>(deserializer: &mut D) -> Result<d128, D::Error>
+    fn deserialize<D>(deserializer: D) -> Result<d128, D::Error>
         where D: serde::de::Deserializer
     {
         deserializer.deserialize_str(d128Visitor)
@@ -104,16 +104,15 @@ struct d128Visitor;
 impl serde::de::Visitor for d128Visitor {
     type Value = d128;
 
-    fn visit_str<E>(&mut self, s: &str) -> Result<d128, E>
+    fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "a d128 value")
+    }
+
+    fn visit_str<E>(self, s: &str) -> Result<d128, E>
         where E: serde::de::Error
     {
-        let d = match d128::from_str(s) {
-            Ok(d) => { d }
-            Err(_) => { return Err(E::custom("Failed to convert to d128")); }
-        };
-
-
-        Ok(d)
+        use serde::de::Unexpected;
+        d128::from_str(s).map_err(|_| E::invalid_value(Unexpected::Str(s), &self))
     }
 }
 
