@@ -136,9 +136,8 @@ impl From<u32> for d128 {
     }
 }
 
+/// based on wiki's algorithm.
 fn double_dabble(num: u64, res: &mut [u8]) {
-    //based on wiki's algorithm.
-    println!("double dable got {:?}", num);
     let nscratch = res.len();
 
     let mut smin = nscratch - 2;    /* speed optimization */
