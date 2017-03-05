@@ -136,6 +136,57 @@ impl From<u32> for d128 {
     }
 }
 
+fn double_dabble(num: u64, res: &mut [u8]) {
+    //based on wiki's algorithm.
+    println!("double dable got {:?}", num);
+    let nscratch = res.len();
+
+    let mut smin = nscratch - 2;    /* speed optimization */
+
+    for j in 0..64 {
+        /* This bit will be shifted in on the right. */
+        let shifted_in = if (num & (1u64 << (63 - j))) > 0 { 1 } else { 0 };
+
+        /* Add 3 everywhere that scratch[k] >= 5. */
+
+        for k in smin..nscratch {
+            res[k] += if res[k] >= 5 { 3 } else { 0 };
+        }
+
+        /* Shift scratch to the left by one position. */
+        if res[smin] >= 8 {
+            smin -= 1
+        }
+
+        for k in smin..nscratch - 1 {
+            res[k] <<= 1;
+            res[k] &= 0xF;
+            res[k] |= if res[k + 1] >= 8 { 1 } else { 0 };
+        }
+
+
+        /* Shift in the new bit from arr. */
+        res[nscratch - 1] <<= 1;
+        res[nscratch - 1] &= 0xF;
+        res[nscratch - 1] |= shifted_in;
+    }
+}
+
+/// Converts an i64 to d128. The result is exact and no error is possible.
+impl From<i64> for d128 {
+    fn from(val: i64) -> d128 {
+        unsafe {
+            let mut res: d128 = uninitialized();
+            let mut bcd_bytes = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+            assert!(bcd_bytes.len() == 34);
+
+            double_dabble(val as u64, &mut bcd_bytes);
+
+            *decQuadFromBCD(&mut res, 0, bcd_bytes.as_ptr(), 0)
+        }
+    }
+}
+
 impl AsRef<d128> for d128 {
     fn as_ref(&self) -> &d128 {
         &self
@@ -801,6 +852,7 @@ extern "C" {
     // Context.
     fn decContextDefault(ctx: *mut Context, kind: uint32_t) -> *mut Context;
     // Utilities and conversions, extractors, etc.
+    fn decQuadFromBCD(res: *mut d128, exp : i32, bcd: *const u8 , sign : i32) -> *mut d128;
     fn decQuadFromInt32(res: *mut d128, src: int32_t) -> *mut d128;
     fn decQuadFromString(res: *mut d128, s: *const c_char, ctx: *mut Context) -> *mut d128;
     fn decQuadFromUInt32(res: *mut d128, src: uint32_t) -> *mut d128;
@@ -1032,5 +1084,32 @@ mod tests {
     fn as_ref_operand() {
         assert_eq!(d128!(1.1), d128!(1.1).min(d128!(2.2)));
         assert_eq!(d128!(1.1), d128!(1.1).min(&d128!(2.2)));
+    }
+
+    fn compare_u8_arrs(left: &[u8], right: &[u8]) {
+        assert_eq!(left.len(), right.len());
+
+        for i in 0..left.len() {
+            if left[i] != right[i] {
+                panic!("compare_u8_arrs inequality: left {:?} right {:?}", left, right);
+            }
+        }
+    }
+
+    #[test]
+    fn double_dabble_test() {
+        let mut arr = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+        double_dabble(18446744073709551615, &mut arr);
+        compare_u8_arrs(&[1,8,4,4,6,7,4,4,0,7,3,7,0,9,5,5,1,6,1,5], &arr);
+    }
+
+    #[test]
+    fn from_i64() {
+        let value = 9223372036854775807i64;
+        let value_str = value.to_string();
+        let d128_i64 = d128::from(value);
+        let d128_str = d128::from_str(&value_str).unwrap();
+
+        assert_eq!(d128_str, d128_i64);
     }
 }
