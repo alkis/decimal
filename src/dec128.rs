@@ -136,75 +136,30 @@ impl From<u32> for d128 {
     }
 }
 
-/// based on wiki's algorithm.
-fn double_dabble(num: u64, res: &mut [u8]) {
-    let nscratch = res.len();
-
-    let mut smin = nscratch - 2;    /* speed optimization */
-
-    for j in 0..64 {
-        /* This bit will be shifted in on the right. */
-        let shifted_in = if (num & (1u64 << (63 - j))) > 0 { 1 } else { 0 };
-
-        /* Add 3 everywhere that scratch[k] >= 5. */
-
-        for k in smin..nscratch {
-            res[k] += if res[k] >= 5 { 3 } else { 0 };
+/// Converts an u64 to d128. The result is exact and no error is possible.
+impl From<u64> for d128 {
+    fn from(mut val: u64) -> d128 {
+        let mut bcd = [0; 34];
+        let mut i = 33;
+        while val > 0 {
+            bcd[i] = (val % 10) as u8;
+            val /= 10;
+            i -= 1;
         }
-
-        /* Shift scratch to the left by one position. */
-        if res[smin] >= 8 {
-            smin -= 1
+        unsafe {
+            let mut res: d128 = uninitialized();
+            *decQuadFromBCD(&mut res, 0, bcd.as_ptr(), 0)
         }
-
-        for k in smin..nscratch - 1 {
-            res[k] <<= 1;
-            res[k] &= 0xF;
-            res[k] |= if res[k + 1] >= 8 { 1 } else { 0 };
-        }
-
-
-        /* Shift in the new bit from arr. */
-        res[nscratch - 1] <<= 1;
-        res[nscratch - 1] &= 0xF;
-        res[nscratch - 1] |= shifted_in;
     }
 }
 
 /// Converts an i64 to d128. The result is exact and no error is possible.
 impl From<i64> for d128 {
     fn from(val: i64) -> d128 {
-        unsafe {
-            let mut res: d128 = uninitialized();
-            let mut bcd_bytes = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
-            assert!(bcd_bytes.len() == 34);
-
-            let as_u64 = {
-                if val == ::std::i64::MIN {
-                    ::std::i64::MAX as u64 + 1
-                } else {
-                    val.abs() as u64
-                }
-            };
-            double_dabble(as_u64, &mut bcd_bytes);
-
-            //that constnat is specified by the decNumber code. so just reusing that.
-            #[allow(overflowing_literals)]
-            *decQuadFromBCD(&mut res, 0, bcd_bytes.as_ptr(), if val >= 0 {0} else {0x80000000})
-        }
-    }
-}
-
-impl From<u64> for d128 {
-    fn from(val: u64) -> d128 {
-        unsafe {
-            let mut res: d128 = uninitialized();
-            let mut bcd_bytes = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
-            assert!(bcd_bytes.len() == 34);
-            double_dabble(val, &mut bcd_bytes);
-
-            //that constnat is specified by the decNumber code. so just reusing that.
-            *decQuadFromBCD(&mut res, 0, bcd_bytes.as_ptr(), 0)
+        if val < 0 {
+            -d128::from(!(val as u64) + 1)
+        } else {
+            d128::from(val as u64)
         }
     }
 }
@@ -1119,30 +1074,16 @@ mod tests {
     }
 
     #[test]
-    fn double_dabble_test() {
-        let mut arr = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
-        double_dabble(18446744073709551615, &mut arr);
-        compare_u8_arrs(&[1,8,4,4,6,7,4,4,0,7,3,7,0,9,5,5,1,6,1,5], &arr);
-    }
-
-    #[test]
     fn from_i64() {
         assert_eq!(d128::from_str(&::std::i64::MAX.to_string()).unwrap(), d128::from(::std::i64::MAX));
-        assert_eq!(d128::from_str(&(::std::i64::MIN + 1).to_string()).unwrap(), d128::from(::std::i64::MIN + 1));
-
-        //sanity
-        assert_eq!(d128::from(123i32), d128::from(123i64));
         assert_eq!(d128::from(0i32), d128::from(0i64));
-        assert_eq!(d128::from(-123i32), d128::from(-123i64));
+        assert_eq!(d128::from_str(&(::std::i64::MIN).to_string()).unwrap(), d128::from(::std::i64::MIN));
     }
 
     #[test]
     fn from_u64() {
         assert_eq!(d128::from_str(&::std::u64::MAX.to_string()).unwrap(), d128::from(::std::u64::MAX));
-        assert_eq!(d128::from_str(&(::std::u64::MIN + 1).to_string()).unwrap(), d128::from(::std::u64::MIN + 1));
-
-        //sanity
-        assert_eq!(d128::from(123i32), d128::from(123u64));
         assert_eq!(d128::from(0i32), d128::from(0u64));
+        assert_eq!(d128::from_str(&(::std::u64::MIN).to_string()).unwrap(), d128::from(::std::u64::MIN));
     }
 }
