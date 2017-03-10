@@ -136,6 +136,34 @@ impl From<u32> for d128 {
     }
 }
 
+/// Converts an u64 to d128. The result is exact and no error is possible.
+impl From<u64> for d128 {
+    fn from(mut val: u64) -> d128 {
+        let mut bcd = [0; 34];
+        let mut i = 33;
+        while val > 0 {
+            bcd[i] = (val % 10) as u8;
+            val /= 10;
+            i -= 1;
+        }
+        unsafe {
+            let mut res: d128 = uninitialized();
+            *decQuadFromBCD(&mut res, 0, bcd.as_ptr(), 0)
+        }
+    }
+}
+
+/// Converts an i64 to d128. The result is exact and no error is possible.
+impl From<i64> for d128 {
+    fn from(val: i64) -> d128 {
+        if val < 0 {
+            -d128::from(!(val as u64) + 1)
+        } else {
+            d128::from(val as u64)
+        }
+    }
+}
+
 impl AsRef<d128> for d128 {
     fn as_ref(&self) -> &d128 {
         &self
@@ -801,6 +829,7 @@ extern "C" {
     // Context.
     fn decContextDefault(ctx: *mut Context, kind: uint32_t) -> *mut Context;
     // Utilities and conversions, extractors, etc.
+    fn decQuadFromBCD(res: *mut d128, exp: i32, bcd: *const u8, sign: i32) -> *mut d128;
     fn decQuadFromInt32(res: *mut d128, src: int32_t) -> *mut d128;
     fn decQuadFromString(res: *mut d128, s: *const c_char, ctx: *mut Context) -> *mut d128;
     fn decQuadFromUInt32(res: *mut d128, src: uint32_t) -> *mut d128;
@@ -1032,5 +1061,33 @@ mod tests {
     fn as_ref_operand() {
         assert_eq!(d128!(1.1), d128!(1.1).min(d128!(2.2)));
         assert_eq!(d128!(1.1), d128!(1.1).min(&d128!(2.2)));
+    }
+
+    fn compare_u8_arrs(left: &[u8], right: &[u8]) {
+        assert_eq!(left.len(), right.len());
+
+        for i in 0..left.len() {
+            if left[i] != right[i] {
+                panic!("compare_u8_arrs inequality: left {:?} right {:?}", left, right);
+            }
+        }
+    }
+
+    #[test]
+    fn from_i64() {
+        assert_eq!(d128::from_str(&::std::i64::MAX.to_string()).unwrap(),
+                   d128::from(::std::i64::MAX));
+        assert_eq!(d128::from(0i32), d128::from(0i64));
+        assert_eq!(d128::from_str(&(::std::i64::MIN).to_string()).unwrap(),
+                   d128::from(::std::i64::MIN));
+    }
+
+    #[test]
+    fn from_u64() {
+        assert_eq!(d128::from_str(&::std::u64::MAX.to_string()).unwrap(),
+                   d128::from(::std::u64::MAX));
+        assert_eq!(d128::from(0i32), d128::from(0u64));
+        assert_eq!(d128::from_str(&(::std::u64::MIN).to_string()).unwrap(),
+                   d128::from(::std::u64::MIN));
     }
 }
