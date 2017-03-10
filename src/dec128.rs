@@ -829,7 +829,7 @@ extern "C" {
     // Context.
     fn decContextDefault(ctx: *mut Context, kind: uint32_t) -> *mut Context;
     // Utilities and conversions, extractors, etc.
-    fn decQuadFromBCD(res: *mut d128, exp : i32, bcd: *const u8 , sign : i32) -> *mut d128;
+    fn decQuadFromBCD(res: *mut d128, exp: i32, bcd: *const u8, sign: i32) -> *mut d128;
     fn decQuadFromInt32(res: *mut d128, src: int32_t) -> *mut d128;
     fn decQuadFromString(res: *mut d128, s: *const c_char, ctx: *mut Context) -> *mut d128;
     fn decQuadFromUInt32(res: *mut d128, src: uint32_t) -> *mut d128;
@@ -1075,15 +1075,19 @@ mod tests {
 
     #[test]
     fn from_i64() {
-        assert_eq!(d128::from_str(&::std::i64::MAX.to_string()).unwrap(), d128::from(::std::i64::MAX));
+        assert_eq!(d128::from_str(&::std::i64::MAX.to_string()).unwrap(),
+                   d128::from(::std::i64::MAX));
         assert_eq!(d128::from(0i32), d128::from(0i64));
-        assert_eq!(d128::from_str(&(::std::i64::MIN).to_string()).unwrap(), d128::from(::std::i64::MIN));
+        assert_eq!(d128::from_str(&(::std::i64::MIN).to_string()).unwrap(),
+                   d128::from(::std::i64::MIN));
     }
 
     #[test]
     fn from_u64() {
-        assert_eq!(d128::from_str(&::std::u64::MAX.to_string()).unwrap(), d128::from(::std::u64::MAX));
+        assert_eq!(d128::from_str(&::std::u64::MAX.to_string()).unwrap(),
+                   d128::from(::std::u64::MAX));
         assert_eq!(d128::from(0i32), d128::from(0u64));
-        assert_eq!(d128::from_str(&(::std::u64::MIN).to_string()).unwrap(), d128::from(::std::u64::MIN));
+        assert_eq!(d128::from_str(&(::std::u64::MIN).to_string()).unwrap(),
+                   d128::from(::std::u64::MIN));
     }
 }
