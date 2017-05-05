@@ -88,9 +88,9 @@ impl serde::ser::Serialize for d128 {
 }
 
 #[cfg(feature = "serde")]
-impl serde::de::Deserialize for d128 {
+impl<'de> serde::de::Deserialize<'de> for d128 {
     fn deserialize<D>(deserializer: D) -> Result<d128, D::Error>
-        where D: serde::de::Deserializer
+        where D: serde::de::Deserializer<'de>
     {
         deserializer.deserialize_str(d128Visitor)
     }
@@ -101,7 +101,7 @@ impl serde::de::Deserialize for d128 {
 struct d128Visitor;
 
 #[cfg(feature = "serde")]
-impl serde::de::Visitor for d128Visitor {
+impl<'de> serde::de::Visitor<'de> for d128Visitor {
     type Value = d128;
 
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
