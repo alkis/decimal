@@ -11,6 +11,7 @@ use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 #[cfg(feature = "serde")]
 use serde;
 use std::cell::RefCell;
+use std::default::Default;
 use std::ffi::{CStr, CString};
 use std::fmt;
 use std::hash::{Hash, Hasher};
@@ -41,6 +42,12 @@ struct decNumber {
     // DECNUMDIGITS = 34 because we use decQuad only
     // 12 = ((DECNUMDIGITS+DECDPUN-1)/DECDPUN)
     lsu: [u16; 12],
+}
+
+impl Default for d128 {
+    fn default() -> Self {
+        d128::zero()
+    }
 }
 
 #[cfg(feature = "ord_subset")]
@@ -970,6 +977,12 @@ mod tests {
 
     #[cfg(feature = "serde")]
     use serde_json::{from_str, to_string};
+
+    #[test]
+    fn default() {
+        assert_eq!(d128::zero(), d128::default());
+        assert_eq!(d128::zero(), Default::default());
+    }
 
     #[cfg(feature = "ord_subset")]
     #[test]
