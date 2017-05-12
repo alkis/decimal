@@ -528,6 +528,15 @@ impl d128 {
             }
         }
     }
+    
+    /// Hidden function for initializing a d128 from an array of bytes. When using this function
+    /// you should be careful about endianness issues.
+    #[doc(hidden)]
+    pub fn from_bytes(bytes: [u8; 16]) -> d128 {
+        d128 {
+            bytes: unsafe { ::std::mem::transmute(bytes) }
+        }
+    }
 
     // Utilities and conversions, extractors, etc.
 
