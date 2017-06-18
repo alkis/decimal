@@ -1,3 +1,7 @@
+## 1.0.1 (2017-06-18)
+
+- update dependencies
+
 ## 1.0.0 (2016-01-22)
 
 - nothing new added, marking as 1.0.0 as the api has reached maturity
