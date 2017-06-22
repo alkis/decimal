@@ -18,7 +18,7 @@ use std::hash::{Hash, Hasher};
 use std::mem::uninitialized;
 use std::ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Div, DivAssign, Rem, RemAssign,
                Neg, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not, Shl,
-               ShlAssign, Shr, ShrAssign};
+               ShlAssign, Shr, ShrAssign, Deref};
 use std::str::FromStr;
 use std::str::from_utf8_unchecked;
 use std::num::FpCategory;
@@ -174,6 +174,14 @@ impl From<i64> for d128 {
 impl AsRef<d128> for d128 {
     fn as_ref(&self) -> &d128 {
         &self
+    }
+}
+
+impl Deref for d128 {
+    type Target = [uint8_t; 16];
+
+    fn deref(&self) -> &[uint8_t; 16] {
+        &self.bytes
     }
 }
 
@@ -977,6 +985,24 @@ mod tests {
 
     #[cfg(feature = "serde")]
     use serde_json::{from_str, to_string};
+
+    #[test]
+    fn test_deref_does_not_blow_the_machine_up() {
+        fn add(a: &d128, b: &d128) -> d128 {
+            *a + *b
+        }
+        let a = d128!(1);
+        let b = d128!(1);
+        let c = add(&a, &b);
+        assert_eq!(c, d128!(2));
+    }
+
+    #[test]
+    fn test_deref_mutate() {
+        let a = &mut d128!(1.011);
+        *a += d128!(1.022);
+        assert_eq!(a, &d128!(2.033));
+    }
 
     #[test]
     fn default() {
