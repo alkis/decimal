@@ -499,7 +499,7 @@ impl d128 {
     }
 
     /// Creates a d128 from raw bytes. Endianess is host dependent.
-    pub unsafe fn from_raw_bytes(bytes: [u8; 16]) -> d128 {
+    pub const unsafe fn from_raw_bytes(bytes: [u8; 16]) -> d128 {
         d128 { bytes: bytes }
     }
 
