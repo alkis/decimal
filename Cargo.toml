@@ -9,12 +9,23 @@ documentation = "https://alkis.github.io/decimal"
 keywords = ["decimal", "decNumber"]
 license = "Apache-2.0"
 
+[lib]
+name = "decimal"
+path = "src/lib.rs"
+
+[[bin]]
+path = "src/get_bytes.rs"
+name = "bytes"
+
+
+
 [dependencies]
 bitflags = "~0.7"
 libc = "~0.2"
 ord_subset = { optional = true, version = "~1.2" }
 rustc-serialize = { optional = true, version = "~0.3" }
 serde = { optional = true, version = "1" }
+clap = { features = [], version = "2" }
 
 [features]
 default = ["ord_subset", "rustc-serialize", "serde"]
