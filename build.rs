@@ -6,7 +6,8 @@ fn main() {
     } else {
         "0"
     };
-    gcc::Config::new()
+    gcc::Build::new()
+        .warnings(false)
         .include("decNumber")
         .file("decNumber/decContext.c")
         .file("decNumber/decDouble.c")
