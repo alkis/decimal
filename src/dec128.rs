@@ -1076,16 +1076,6 @@ mod tests {
         assert_eq!(d128!(1.1), d128!(1.1).min(&d128!(2.2)));
     }
 
-    fn compare_u8_arrs(left: &[u8], right: &[u8]) {
-        assert_eq!(left.len(), right.len());
-
-        for i in 0..left.len() {
-            if left[i] != right[i] {
-                panic!("compare_u8_arrs inequality: left {:?} right {:?}", left, right);
-            }
-        }
-    }
-
     #[test]
     fn from_i64() {
         assert_eq!(d128::from_str(&::std::i64::MAX.to_string()).unwrap(),

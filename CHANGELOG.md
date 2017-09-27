@@ -1,3 +1,8 @@
+## 2.0 (2017-09-27)
+
+- update dependencies
+- status bitflags are moved from `decimal::NAME` to `decimal::Status::NAME`
+
 ## 1.0.1 (2017-06-18)
 
 - update dependencies

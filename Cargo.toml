@@ -9,18 +9,21 @@ documentation = "https://alkis.github.io/decimal"
 keywords = ["decimal", "decNumber"]
 license = "Apache-2.0"
 
+[badges]
+travis-ci = { repository = "alkis/decimal" }
+
 [dependencies]
-bitflags = "~0.7"
-libc = "~0.2"
-ord_subset = { optional = true, version = "~1.2" }
-rustc-serialize = { optional = true, version = "~0.3" }
+bitflags = "1"
+libc = "0.2"
+ord_subset = { optional = true, version = "2" }
+rustc-serialize = { optional = true, version = "0.3" }
 serde = { optional = true, version = "1" }
 
 [features]
 default = ["ord_subset", "rustc-serialize", "serde"]
 
 [build-dependencies]
-gcc = "~0.3"
+gcc = "0.3"
 
 [dev-dependencies]
 serde_json = "1"
