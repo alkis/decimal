@@ -83,34 +83,34 @@ bitflags! {
     /// # fn main() {
     /// assert_eq!(d128::get_status(), Status::empty());
     /// let _ = d128!(1) / &d128!(0);
-    /// assert!(d128::get_status().contains(decimal::DIVISION_BY_ZERO));
+    /// assert!(d128::get_status().contains(decimal::Status::DIVISION_BY_ZERO));
     /// let _ = d128!(0) / &d128!(0);
-    /// assert!(d128::get_status().contains(decimal::DIVISION_UNDEFINED));
+    /// assert!(d128::get_status().contains(decimal::Status::DIVISION_UNDEFINED));
     /// // The previous status flag was not cleared!
-    /// assert!(d128::get_status().contains(decimal::DIVISION_BY_ZERO));
+    /// assert!(d128::get_status().contains(decimal::Status::DIVISION_BY_ZERO));
     /// # }
-    pub flags Status: ::libc::uint32_t {
+    pub struct Status: ::libc::uint32_t {
         /// Conversion syntax error.
-        const CONVERSION_SYNTAX    = 0x00000001,
+        const CONVERSION_SYNTAX    = 0x00000001;
         /// Division by zero.
-        const DIVISION_BY_ZERO     = 0x00000002,
+        const DIVISION_BY_ZERO     = 0x00000002;
         /// Division impossible.
-        const DIVISION_IMPOSSIBLE  = 0x00000004,
+        const DIVISION_IMPOSSIBLE  = 0x00000004;
         /// Division undefined.
-        const DIVISION_UNDEFINED   = 0x00000008,
-        // const INSUFFICIENT_STORAGE = 0x00000010,
+        const DIVISION_UNDEFINED   = 0x00000008;
+        // const INSUFFICIENT_STORAGE = 0x00000010;
         /// The result is inexact.
-        const INEXACT              = 0x00000020,
-        // const INVALID_CONTEXT      = 0x00000040,
+        const INEXACT              = 0x00000020;
+        // const INVALID_CONTEXT      = 0x00000040;
         /// An invalid operation was requested.
-        const INVALID_OPERATION    = 0x00000080,
-        // const LOST_DIGITS          = 0x00000100,
+        const INVALID_OPERATION    = 0x00000080;
+        // const LOST_DIGITS          = 0x00000100;
         /// Overflow.
-        const OVERFLOW             = 0x00000200,
-        // const CLAMPED              = 0x00000400,
-        // const ROUNDED              = 0x00000800,
-        // const SUBNORMAL            = 0x00001000,
+        const OVERFLOW             = 0x00000200;
+        // const CLAMPED              = 0x00000400;
+        // const ROUNDED              = 0x00000800;
+        // const SUBNORMAL            = 0x00001000;
         /// Underflow.
-        const UNDERFLOW            = 0x00002000,
+        const UNDERFLOW            = 0x00002000;
     }
 }
