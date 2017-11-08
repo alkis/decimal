@@ -75,17 +75,19 @@ pub fn plugin_registrar(reg: &mut Registry) {
 fn from_str(s: &str) -> Result<d128, &'static str> {
     use std::str::FromStr;
     d128::set_status(decimal::Status::empty());
-    let res = d128::from_str(s);
+    let no_spaces = s.replace(" ", "");
+    let res = d128::from_str(&no_spaces);
     
     let status = d128::get_status();
     if status.contains(decimal::Status::CONVERSION_SYNTAX) {
-        Err("not a valid d128 number")
+        println!("{} {:?}", s, res);
+        Err("not a valid d128 number (CONVERSION_SYNTAX)")
     } else if status.contains(decimal::Status::OVERFLOW) {
-        Err("too large for a d128 number")
+        Err("too large for a d128 number (OVERFLOW)")
     } else if status.contains(decimal::Status::UNDERFLOW) {
-        Err("too small for a d128 number")
+        Err("too small for a d128 number (UNDERFLOW)")
     } else if !status.is_empty() {
-        Err("not a valid d128 number")
+        Err("not a valid d128 number (is_empty)")
     } else {
         Ok(res.unwrap())
     }
