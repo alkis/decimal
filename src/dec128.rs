@@ -497,10 +497,10 @@ impl d128 {
     {
         CTX.with(|ctx| f(&mut ctx.borrow_mut()))
     }
-
+    
     /// Creates a d128 from raw bytes. Endianess is host dependent.
-    pub const unsafe fn from_raw_bytes(bytes: [u8; 16]) -> d128 {
-        d128 { bytes: bytes }
+    pub const fn from_raw_bytes(bytes: [u8; 16]) -> d128 {
+        d128 { bytes }
     }
 
     /// Returns raw bytes for this d128. Endianess is host dependent.
