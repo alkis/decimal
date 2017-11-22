@@ -678,6 +678,18 @@ impl d128 {
         d128::with_context(|ctx| unsafe { *decQuadQuantize(&mut self, &self, other.as_ref(), ctx) })
     }
 
+    /// Same as the `quantize` function but allows a rounding mode to be specified.
+    pub fn quantize_with_mode<O: AsRef<d128>>(mut self, other: O, mut rounding: Rounding) -> d128 {
+        use std::mem;
+
+        d128::with_context(|ctx| {
+            mem::swap(&mut ctx.rounding, &mut rounding);
+            let result = unsafe { *decQuadQuantize(&mut self, &self, other.as_ref(), ctx) };
+            ctx.rounding = rounding;
+            result
+        })
+    }
+
     /// Returns a copy of `self` with its coefficient reduced to its shortest possible form without
     /// changing the value of the result. This removes all possible trailing zeros from the
     /// coefficient (some may remain when the number is very close to the most positive or most
@@ -1092,5 +1104,14 @@ mod tests {
         assert_eq!(d128::from(0i32), d128::from(0u64));
         assert_eq!(d128::from_str(&(::std::u64::MIN).to_string()).unwrap(),
                    d128::from(::std::u64::MIN));
+    }
+
+    #[test]
+    fn quantize_rounding() {
+        assert_eq!(d128!(2.0), d128!(1.5).quantize_with_mode(d128!(1), Rounding::HalfUp));
+        assert_eq!(d128!(3.0), d128!(2.5).quantize_with_mode(d128!(1), Rounding::HalfUp));
+
+        assert_eq!(d128!(2.0), d128!(2.9).quantize_with_mode(d128!(1), Rounding::Floor));
+        assert_eq!(d128!(3.0), d128!(2.1).quantize_with_mode(d128!(1), Rounding::Ceiling));
     }
 }
