@@ -22,6 +22,8 @@ use std::ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Div, DivAssign, R
 use std::str::FromStr;
 use std::str::from_utf8_unchecked;
 use std::num::FpCategory;
+use std::iter::Sum;
+use std::borrow::Borrow;
 
 thread_local!(static CTX: RefCell<Context> = RefCell::new(d128::default_context()));
 
@@ -473,6 +475,14 @@ impl ShrAssign<usize> for d128 {
                 decQuadShift(self, self, &shift, ctx);
             }
         })
+    }
+}
+
+impl<T> Sum<T> for d128 where T: Borrow<d128> {
+    fn sum<I: IntoIterator<Item = T>>(iter: I) -> d128 {
+        iter.into_iter()
+            .fold(d128::zero(), |acc, val|
+                acc + val.borrow())
     }
 }
 
@@ -1092,5 +1102,14 @@ mod tests {
         assert_eq!(d128::from(0i32), d128::from(0u64));
         assert_eq!(d128::from_str(&(::std::u64::MIN).to_string()).unwrap(),
                    d128::from(::std::u64::MIN));
+    }
+
+    #[test]
+    fn test_sum() {
+        let decimals = vec![d128!(1), d128!(2), d128!(3), d128!(4)];
+
+        assert_eq!(d128!(10), decimals.iter().sum());
+
+        assert_eq!(d128!(10), decimals.into_iter().sum());
     }
 }
