@@ -1,3 +1,7 @@
+## 2.0.1 (2017-11-30)
+
+- update dependencies
+
 ## 2.0 (2017-09-27)
 
 - update dependencies
