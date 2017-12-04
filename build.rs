@@ -1,4 +1,4 @@
-extern crate gcc;
+extern crate cc;
 
 fn main() {
     let litend = if cfg!(target_endian = "little") {
@@ -6,7 +6,7 @@ fn main() {
     } else {
         "0"
     };
-    gcc::Build::new()
+    cc::Build::new()
         .include("decNumber")
         .file("decNumber/decContext.c")
         .file("decNumber/decDouble.c")
@@ -17,5 +17,6 @@ fn main() {
         .file("decNumber/decimal128.c")
         .file("decNumber/decimal64.c") // for conversion tables
         .define("DECLITEND", Some(litend))
+        .flag_if_supported("-flto")
         .compile("libdecNumber.a");
 }
