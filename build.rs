@@ -17,6 +17,6 @@ fn main() {
         .file("decNumber/decimal128.c")
         .file("decNumber/decimal64.c") // for conversion tables
         .define("DECLITEND", Some(litend))
-        .flag_if_supported("-flto")
+        .flag_if_supported("-flto=thin")
         .compile("libdecNumber.a");
 }

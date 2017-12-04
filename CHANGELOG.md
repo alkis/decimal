@@ -1,5 +1,9 @@
 ## 2.0.2 (2017-12-04)
 
+- pass -flto=thin instead of -flto because the latter breaks gcc
+
+## 2.0.2 (2017-12-04)
+
 - replace gcc with cc crate
 - pass -flto to the cc compiler if supported
 
