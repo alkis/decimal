@@ -1,4 +1,8 @@
-## 2.0.2 (2017-12-04)
+## 2.0.4 (2017-12-04)
+
+- drop -flto because it doesn't seem to work on linux
+
+## 2.0.3 (2017-12-04)
 
 - pass -flto=thin instead of -flto because the latter breaks gcc
 
