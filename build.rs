@@ -1,4 +1,4 @@
-extern crate gcc;
+extern crate cc;
 
 fn main() {
     let litend = if cfg!(target_endian = "little") {
@@ -6,7 +6,7 @@ fn main() {
     } else {
         "0"
     };
-    gcc::Build::new()
+    cc::Build::new()
         .warnings(false)
         .include("decNumber")
         .file("decNumber/decContext.c")

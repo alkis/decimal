@@ -1,3 +1,25 @@
+## 2.0.4 (2017-12-04)
+
+- drop -flto because it doesn't seem to work on linux
+
+## 2.0.3 (2017-12-04)
+
+- pass -flto=thin instead of -flto because the latter breaks gcc
+
+## 2.0.2 (2017-12-04)
+
+- replace gcc with cc crate
+- pass -flto to the cc compiler if supported
+
+## 2.0.1 (2017-11-30)
+
+- update dependencies
+
+## 2.0 (2017-09-27)
+
+- update dependencies
+- status bitflags are moved from `decimal::NAME` to `decimal::Status::NAME`
+
 ## 1.0.1 (2017-06-18)
 
 - update dependencies

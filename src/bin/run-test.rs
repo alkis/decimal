@@ -266,20 +266,20 @@ fn parse_test<'a>(raw: &'a str, s: &mut Scanner<'a>) -> Test<'a> {
         // We only support IEEE flags.
         status = status |
                  match cond.as_ref() {
-            "conversion_syntax" => CONVERSION_SYNTAX,
-            "division_by_zero" => DIVISION_BY_ZERO,
-            "division_impossible" => DIVISION_IMPOSSIBLE,
-            "division_undefined" => DIVISION_UNDEFINED,
+            "conversion_syntax" => Status::CONVERSION_SYNTAX,
+            "division_by_zero" => Status::DIVISION_BY_ZERO,
+            "division_impossible" => Status::DIVISION_IMPOSSIBLE,
+            "division_undefined" => Status::DIVISION_UNDEFINED,
             "insufficient_storage" => Status::empty(), // INSUFFICIENT_STORAGE,
-            "inexact" => INEXACT,
+            "inexact" => Status::INEXACT,
             "invalid_context" => Status::empty(), // INVALID_CONTEXT,
-            "invalid_operation" => INVALID_OPERATION,
+            "invalid_operation" => Status::INVALID_OPERATION,
             "lost_digits" => Status::empty(), // LOST_DIGITS,
-            "overflow" => OVERFLOW,
+            "overflow" => Status::OVERFLOW,
             "clamped" => Status::empty(), // CLAMPED,
             "rounded" => Status::empty(), // ROUNDED,
             "subnormal" => Status::empty(), // SUBNORMAL,
-            "underflow" => UNDERFLOW,
+            "underflow" => Status::UNDERFLOW,
             _ => panic!("Cannot parse condition {}", s.current()),
         }
     }
