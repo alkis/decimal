@@ -838,6 +838,20 @@ impl d128 {
     pub fn is_zero(&self) -> bool {
         unsafe { decQuadIsZero(self) != 0 }
     }
+
+    pub fn finite_or(self, default: d128) -> d128 {
+        match self.is_finite() {
+            true => self,
+            false => default
+        }
+    }
+
+    pub fn finite_or_else<F: FnOnce() -> d128>(self, f: F) -> d128 {
+        match self.is_finite() {
+            true => self,
+            false => f()
+        }
+    }
 }
 
 extern "C" {
