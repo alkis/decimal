@@ -617,13 +617,11 @@ impl d128 {
     /// respectively). Inexact results will almost always be correctly rounded, but may be up to 1
     /// ulp (unit in last place) in error in rare cases. This is a mathematical function; the
     /// 10<sup>6</sup> restrictions on precision and range apply as described above.
-    pub fn exp<O: AsRef<d128>>(mut self, exp: O) -> d128 {
+    pub fn exp(mut self) -> d128 {
         d128::with_context(|ctx| unsafe {
             let mut num_self: decNumber = uninitialized();
-            let mut num_exp: decNumber = uninitialized();
             decimal128ToNumber(&self, &mut num_self);
-            decimal128ToNumber(exp.as_ref(), &mut num_exp);
-            decNumberExp(&mut num_self, &num_self, &num_exp, ctx);
+            decNumberExp(&mut num_self, &num_self, ctx);
             *decimal128FromNumber(&mut self, &num_self, ctx)
         })
     }
@@ -948,7 +946,6 @@ extern "C" {
                       ctx: *mut Context)
                       -> *mut decNumber;
     fn decNumberExp(res: *mut decNumber,
-                    lhs: *const decNumber,
                     rhs: *const decNumber,
                     ctx: *mut Context)
                     -> *mut decNumber;
@@ -1092,5 +1089,10 @@ mod tests {
         assert_eq!(d128::from(0i32), d128::from(0u64));
         assert_eq!(d128::from_str(&(::std::u64::MIN).to_string()).unwrap(),
                    d128::from(::std::u64::MIN));
+    }
+
+    #[test]
+    fn math_op() {
+        assert_eq!(d128!(1), d128!(1).ln().exp());
     }
 }

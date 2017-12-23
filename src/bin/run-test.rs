@@ -494,6 +494,7 @@ fn run_test<'a>(env: &Environment, test: Test<'a>) -> TestResult<'a> {
                                   &test);
         }
         Op::Divide(a, b) => simple_op!(test, value = div(a, b)),
+        Op::Exp(a) => simple_op!(test, value = exp(a)),
         Op::Fma(a, b, c) => simple_op!(test, value = mul_add(a, b, c)),
         Op::Invert(a) => simple_op!(test, value = not(a)),
         Op::LogB(a) => simple_op!(test, value = logb(a)),
