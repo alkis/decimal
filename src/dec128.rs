@@ -539,6 +539,16 @@ impl d128 {
         }
     }
 
+    /// Returns the d128 representing +Infinity.
+    pub fn infinity() -> d128 {
+        d128!(Infinity)
+    }
+
+    /// Returns the d128 representing -Infinity.
+    pub fn neg_infinity() -> d128 {
+        d128!(-Infinity)
+    }
+
     // Computational.
 
     /// Returns the absolute value of `self`.
@@ -982,6 +992,14 @@ mod tests {
     fn default() {
         assert_eq!(d128::zero(), d128::default());
         assert_eq!(d128::zero(), Default::default());
+
+        assert!(d128::infinity().is_infinite());
+        assert!(!d128::infinity().is_negative());
+
+        assert!(d128::neg_infinity().is_infinite());
+        assert!(d128::neg_infinity().is_negative());
+
+        assert_eq!(d128::infinity() + d128!(1), d128::infinity());
     }
 
     #[cfg(feature = "ord_subset")]
