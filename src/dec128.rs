@@ -992,7 +992,10 @@ mod tests {
     fn default() {
         assert_eq!(d128::zero(), d128::default());
         assert_eq!(d128::zero(), Default::default());
+    }
 
+    #[test]
+    fn special() {
         assert!(d128::infinity().is_infinite());
         assert!(!d128::infinity().is_negative());
 
