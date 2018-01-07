@@ -10,20 +10,20 @@ use ord_subset;
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 #[cfg(feature = "serde")]
 use serde;
+use std::borrow::Borrow;
 use std::cell::RefCell;
 use std::default::Default;
 use std::ffi::{CStr, CString};
 use std::fmt;
 use std::hash::{Hash, Hasher};
+use std::iter::Sum;
 use std::mem::uninitialized;
+use std::num::FpCategory;
 use std::ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Div, DivAssign, Rem, RemAssign,
                Neg, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not, Shl,
                ShlAssign, Shr, ShrAssign};
 use std::str::FromStr;
 use std::str::from_utf8_unchecked;
-use std::num::FpCategory;
-use std::iter::Sum;
-use std::borrow::Borrow;
 
 thread_local!(static CTX: RefCell<Context> = RefCell::new(d128::default_context()));
 
