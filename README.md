@@ -1,9 +1,9 @@
 # decimal
 
-[![Travis](https://img.shields.io/travis/alkis/decimal.svg)](https://img.shields.io/travis/alkis/decimal.svg)
-[![Crates.io](https://img.shields.io/crates/d/decimal.svg)](https://img.shields.io/crates/d/decimal.svg)
-[![Crates.io](https://img.shields.io/crates/v/decimal.svg)](https://img.shields.io/crates/v/decimal.svg)
-[![Crates.io](https://img.shields.io/crates/l/decimal.svg)](https://img.shields.io/crates/l/decimal.svg)
+[![Travis](https://img.shields.io/travis/alkis/decimal.svg)](https://travis-ci.org/alkis/decimal)
+![Downloads](https://img.shields.io/crates/d/decimal.svg)
+[![Crates.io](https://img.shields.io/crates/v/decimal.svg)](https://crates.io/crates/decimal)
+![Apache license](https://img.shields.io/crates/l/decimal.svg)
 
 Decimal Floating Point arithmetic for rust based on the [decNumber
 library](http://speleotrove.com/decimal/decnumber.html).
