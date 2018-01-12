@@ -16,6 +16,8 @@ use std::ffi::{CStr, CString};
 use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::mem::uninitialized;
+use std::borrow::Borrow;
+use std::iter::Sum;
 use std::ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Div, DivAssign, Rem, RemAssign,
                Neg, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not, Shl,
                ShlAssign, Shr, ShrAssign, Deref};
@@ -481,6 +483,14 @@ impl ShrAssign<usize> for d128 {
                 decQuadShift(self, self, &shift, ctx);
             }
         })
+    }
+}
+
+impl<T> Sum<T> for d128 where T: Borrow<d128> {
+    fn sum<I: IntoIterator<Item = T>>(iter: I) -> d128 {
+        iter.into_iter()
+            .fold(d128::zero(), |acc, val|
+                acc + val.borrow())
     }
 }
 
@@ -1007,6 +1017,18 @@ mod tests {
     use test::{black_box, Bencher};
 
     #[test]
+    #[test]
+    fn test_sum_impl() {
+        let decimals = vec![d128!(1), d128!(2), d128!(3), d128!(4)];
+        assert_eq!(d128!(10), decimals.iter().sum());
+        assert_eq!(d128!(10), decimals.into_iter().sum());
+    }
+
+    #[test]
+    fn it_checks_default_is_zero() {
+        assert_eq!(d128::default(), d128::zero());
+    }
+
     #[test]
     fn it_handles_a_real_world_small_number_that_landed_in_db_as_nan() {
         let amt = d128!(1E-8);
