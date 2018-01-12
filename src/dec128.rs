@@ -557,6 +557,16 @@ impl d128 {
         }
     }
 
+    /// Returns the d128 representing +Infinity.
+    pub fn infinity() -> d128 {
+        d128!(Infinity)
+    }
+
+    /// Returns the d128 representing -Infinity.
+    pub fn neg_infinity() -> d128 {
+        d128!(-Infinity)
+    }
+
     // Computational.
 
     /// Returns the absolute value of `self`.
@@ -1017,6 +1027,19 @@ mod tests {
     use test::{black_box, Bencher};
 
     #[test]
+    fn it_parses_zero_in_exp_notation() {
+        assert_eq!(d128::from_str("0E-8").unwrap(), d128!(0.00000000));
+    }
+
+    #[test]
+    fn it_verifies_infinity_fns() {
+        assert!(d128::infinity().is_infinite());
+        assert!(!d128::infinity().is_negative());
+        assert!(d128::neg_infinity().is_infinite());
+        assert!(d128::neg_infinity().is_negative());
+        assert_eq!(d128::infinity() + d128!(1), d128::infinity());
+    }
+
     #[test]
     fn test_sum_impl() {
         let decimals = vec![d128!(1), d128!(2), d128!(3), d128!(4)];
