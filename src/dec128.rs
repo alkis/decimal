@@ -1007,6 +1007,27 @@ mod tests {
     use test::{black_box, Bencher};
 
     #[test]
+    #[test]
+    fn it_handles_a_real_world_small_number_that_landed_in_db_as_nan() {
+        let amt = d128!(1E-8);
+        let price = d128!(0.00143500);
+        let fee = d128!(1E-8);
+        let total = d128!(0E-8);
+        assert_eq!(d128::zero(), total);
+        let as_calculated = (d128!(1) - fee / total).quantize(d128!(0.00000001));
+        assert!(as_calculated.is_nan());
+        let fixed = (d128!(1) - fee / total.max(d128!(0.00000001))).quantize(d128!(0.00000001));
+        assert!(fixed.is_finite());
+    }
+
+    #[test]
+    fn it_checks_the_max_of_nan_and_a_real_number_is_the_real_number() {
+        let x = d128!(NaN);
+        assert!(x.is_nan());
+        assert_eq!(x.max(d128::zero()), d128::zero());
+        assert_eq!(x.max(d128!(-100)), d128!(-100));
+    }
+
     #[bench]
     fn random_number_via_u32_range(b: &mut Bencher) {
         let mut rng = rand::thread_rng();
