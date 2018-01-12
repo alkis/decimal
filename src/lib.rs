@@ -13,6 +13,8 @@ extern crate serde;
 #[cfg(test)]
 extern crate serde_json;
 #[cfg(test)]
+extern crate rand;
+#[cfg(test)]
 extern crate test;
 
 #[macro_export]

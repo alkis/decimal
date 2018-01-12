@@ -1000,8 +1000,52 @@ mod tests {
     #[cfg(feature = "serde")]
     use serde_json::{from_str, to_string};
 
+    use rand::{self, Rng};
+    use rand::distributions::{IndependentSample, Range};
+
     #[allow(unused_imports)]
     use test::{black_box, Bencher};
+
+    #[test]
+    #[bench]
+    fn random_number_via_u32_range(b: &mut Bencher) {
+        let mut rng = rand::thread_rng();
+        let range = Range::new(980_000_000u32, 1_200_000_000u32);
+        let e = d128!(1_000_000_000);
+        b.iter(|| {
+            let d: d128 = d128::from(range.ind_sample(&mut rng)) / e;
+            d
+        });
+    }
+
+    #[test]
+    fn it_validates_range_of_random_number_via_u32_range() {
+        let mut rng = rand::thread_rng();
+        let range = Range::new(980_000_000u32, 1_200_000_000u32);
+        let e = d128!(1_000_000_000);
+        let d: d128 = d128::from(range.ind_sample(&mut rng)) / e;
+        println!("d={}", d);
+        assert!(d >= d128!(0.98));
+        assert!(d <= d128!(1.2));
+    }
+
+    #[bench]
+    fn random_number_via_u32(b: &mut Bencher) {
+        let mut rng = rand::thread_rng();
+        b.iter(|| {
+            let d: d128 = rng.gen::<u32>().into();
+            d
+        });
+    }
+
+    #[bench]
+    fn random_number_via_u64(b: &mut Bencher) {
+        let mut rng = rand::thread_rng();
+        b.iter(|| {
+            let d: d128 = rng.gen::<u64>().into();
+            d
+        });
+    }
 
     #[test]
     fn test_deref_does_not_blow_the_machine_up() {
