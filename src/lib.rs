@@ -1,4 +1,4 @@
-#![feature(const_fn)]
+#![feature(const_fn, test)]
 
 #[macro_use]
 extern crate bitflags;
@@ -12,6 +12,8 @@ extern crate serde;
 #[cfg(feature = "serde")]
 #[cfg(test)]
 extern crate serde_json;
+#[cfg(test)]
+extern crate test;
 
 #[macro_export]
 /// A macro to construct d128 literals.

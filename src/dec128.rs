@@ -1000,6 +1000,9 @@ mod tests {
     #[cfg(feature = "serde")]
     use serde_json::{from_str, to_string};
 
+    #[allow(unused_imports)]
+    use test::{black_box, Bencher};
+
     #[test]
     fn test_deref_does_not_blow_the_machine_up() {
         fn add(a: &d128, b: &d128) -> d128 {
