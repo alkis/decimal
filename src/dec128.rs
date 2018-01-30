@@ -10,22 +10,24 @@ use ord_subset;
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 #[cfg(feature = "serde")]
 use serde;
+use std::borrow::Borrow;
 use std::cell::RefCell;
 use std::default::Default;
 use std::ffi::{CStr, CString};
 use std::fmt;
 use std::hash::{Hash, Hasher};
-use std::mem::uninitialized;
-use std::borrow::Borrow;
 use std::iter::Sum;
+use std::mem::uninitialized;
+use std::num::FpCategory;
 use std::ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Div, DivAssign, Rem, RemAssign,
                Neg, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not, Shl,
                ShlAssign, Shr, ShrAssign, Deref};
 use std::str::FromStr;
 use std::str::from_utf8_unchecked;
-use std::num::FpCategory;
 
 thread_local!(static CTX: RefCell<Context> = RefCell::new(d128::default_context()));
+thread_local!(static ROUND_DOWN: RefCell<Context> = RefCell::new(d128::with_rounding(Rounding::Down)));
+thread_local!(static HALF_UP: RefCell<Context> = RefCell::new(d128::with_rounding(Rounding::HalfUp)));
 
 #[repr(C)]
 #[derive(Clone, Copy)]
@@ -502,6 +504,28 @@ impl d128 {
         }
     }
 
+    /// Initialize a `Context` with the specified `Rounding`.
+    fn with_rounding(rounding: Rounding) -> Context {
+        unsafe {
+            let mut res: Context = uninitialized();
+            let mut ctx = *decContextDefault(&mut res, 128);
+            decContextSetRounding(&mut ctx, rounding as u32);
+            ctx
+        }
+    }
+
+    fn with_round_down<F, R>(f: F) -> R
+        where F: FnOnce(&mut Context) -> R
+    {
+        ROUND_DOWN.with(|ctx| f(&mut ctx.borrow_mut()))
+    }
+
+    fn with_half_up<F, R>(f: F) -> R
+        where F: FnOnce(&mut Context) -> R
+    {
+        HALF_UP.with(|ctx| f(&mut ctx.borrow_mut()))
+    }
+
     fn with_context<F, R>(f: F) -> R
         where F: FnOnce(&mut Context) -> R
     {
@@ -702,8 +726,62 @@ impl d128 {
     /// Returns `self` set to have the same quantum as `other`, if possible (that is, numerically
     /// the same value but rounded or padded if necessary to have the same exponent as `other`, for
     /// example to round a monetary quantity to cents).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// #[macro_use]
+    /// extern crate decimal;
+    ///
+    /// fn main() {
+    ///     let prec = d128!(0.1);
+    ///     assert_eq!(d128!(0.400012342423).quantize(prec), d128!(0.4));
+    ///     // uses default rounding (half even)
+    ///     assert_eq!(d128!(0.05).quantize(prec), d128!(0.0));
+    ///     assert_eq!(d128!(0.15).quantize(prec), d128!(0.2));
+    /// }
+    /// ```
     pub fn quantize<O: AsRef<d128>>(mut self, other: O) -> d128 {
         d128::with_context(|ctx| unsafe { *decQuadQuantize(&mut self, &self, other.as_ref(), ctx) })
+    }
+
+    /// Like `quantize`, but uses `Rounding::Down`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// #[macro_use]
+    /// extern crate decimal;
+    ///
+    /// fn main() {
+    ///     let prec = d128!(0.1);
+    ///     assert_eq!(d128!(0.05).truncate(prec), d128!(0.0));
+    ///     assert_eq!(d128!(0.15).truncate(prec), d128!(0.1));
+    ///     assert_eq!(d128!(0.19).truncate(prec), d128!(0.1));
+    /// }
+    /// ```
+    pub fn truncate<O: AsRef<d128>>(mut self, other: O) -> d128 {
+        d128::with_round_down(|ctx| unsafe { *decQuadQuantize(&mut self, &self, other.as_ref(), ctx) })
+    }
+
+    /// Like `quantize`, but uses `Rounding::HalfUp`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// #[macro_use]
+    /// extern crate decimal;
+    ///
+    /// fn main() {
+    ///     let prec = d128!(0.1);
+    ///     assert_eq!(d128!(0.15).round(prec), d128!(0.2));
+    ///     assert_eq!(d128!(0.14999999999).round(prec), d128!(0.1));
+    ///     assert_eq!(d128!(0.19).round(prec), d128!(0.2));
+    ///     assert_eq!(d128!(0.05).round(prec), d128!(0.1));
+    /// }
+    /// ```
+    pub fn round<O: AsRef<d128>>(mut self, other: O) -> d128 {
+        d128::with_half_up(|ctx| unsafe { *decQuadQuantize(&mut self, &self, other.as_ref(), ctx) })
     }
 
     /// Returns a copy of `self` with its coefficient reduced to its shortest possible form without
@@ -877,6 +955,7 @@ impl d128 {
 extern "C" {
     // Context.
     fn decContextDefault(ctx: *mut Context, kind: uint32_t) -> *mut Context;
+    fn decContextSetRounding(ctx: *mut Context, rounding: uint32_t);
     // Utilities and conversions, extractors, etc.
     fn decQuadFromBCD(res: *mut d128, exp: i32, bcd: *const u8, sign: i32) -> *mut d128;
     fn decQuadFromInt32(res: *mut d128, src: int32_t) -> *mut d128;
@@ -1137,6 +1216,17 @@ mod tests {
         assert_eq!(d128::zero(), Default::default());
     }
 
+    #[test]
+    fn special() {
+        assert!(d128::infinity().is_infinite());
+        assert!(!d128::infinity().is_negative());
+
+        assert!(d128::neg_infinity().is_infinite());
+        assert!(d128::neg_infinity().is_negative());
+
+        assert_eq!(d128::infinity() + d128!(1), d128::infinity());
+    }
+
     #[cfg(feature = "ord_subset")]
     #[test]
     #[should_panic]
@@ -1245,5 +1335,14 @@ mod tests {
         assert_eq!(d128::from(0i32), d128::from(0u64));
         assert_eq!(d128::from_str(&(::std::u64::MIN).to_string()).unwrap(),
                    d128::from(::std::u64::MIN));
+    }
+
+    #[test]
+    fn test_sum() {
+        let decimals = vec![d128!(1), d128!(2), d128!(3), d128!(4)];
+
+        assert_eq!(d128!(10), decimals.iter().sum());
+
+        assert_eq!(d128!(10), decimals.into_iter().sum());
     }
 }

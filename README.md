@@ -1,4 +1,5 @@
 # decimal
+
 Decimal Floating Point arithmetic for rust based on the [decNumber
 library](http://speleotrove.com/decimal/decnumber.html).
 
