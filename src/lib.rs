@@ -16,6 +16,8 @@ extern crate serde_json;
 extern crate rand;
 #[cfg(test)]
 extern crate test;
+#[cfg(feature = "simd-benchmarks")]
+extern crate faster;
 
 #[macro_export]
 /// A macro to construct d128 literals.

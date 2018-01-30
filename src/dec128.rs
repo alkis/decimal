@@ -1106,6 +1106,76 @@ mod tests {
     use test::{black_box, Bencher};
 
     #[bench]
+    fn sums_vec_of_100_000_u64_1e8_of_float(b: &mut Bencher) {
+        let x = 0.00012345f64;
+        let mut xs: Vec<u64> = Vec::with_capacity(100_000);
+        let mut ys: Vec<f64> = Vec::with_capacity(100_000);
+        for i in 0..100_000u64 {
+            xs.push(((i as f64 * x) * 1e8) as u64);
+            ys.push(i as f64 * x);
+        }
+
+        assert!(
+            xs.iter().sum::<u64>() as f64 / 1e8
+            -
+            ys.iter().sum::<f64>()
+            <
+            1e-8
+        );
+
+        b.iter(|| {
+            xs.iter().sum::<u64>() as f64 / 1e8
+        });
+    }
+
+
+    #[cfg(feature = "simd-benchmarks")]
+    #[bench]
+    fn sums_vec_of_100_000_u64_1e8_of_float_simd(b: &mut Bencher) {
+        use faster::*;
+        let x = 0.00012345f64;
+        let mut xs: Vec<u64> = Vec::with_capacity(100_000);
+        let mut ys: Vec<f64> = Vec::with_capacity(100_000);
+        for i in 0..100_000u64 {
+            xs.push(((i as f64 * x) * 1e8) as u64);
+            ys.push(i as f64 * x);
+        }
+
+        assert!(
+            ((&xs[..]).simd_iter()
+                .simd_reduce(u64s(0), u64s(0), |acc, v| acc + v)
+                .sum() as f64 / 1e8)
+            -
+            ys.iter().sum::<f64>()
+            <
+            1e-8
+        );
+
+        b.iter(|| {
+            ((&xs[..]).simd_iter()
+                .simd_reduce(u64s(0), u64s(0), |acc, v| acc + v)
+                .sum() as f64 / 1e8)
+        });
+    }
+
+    #[cfg(feature = "simd-benchmarks")]
+    #[bench]
+    fn sums_vec_of_100_000_f32_simd(b: &mut Bencher) {
+        use faster::*;
+        let x = 0.00012345f32;
+        let mut xs: Vec<f32> = Vec::with_capacity(100_000);
+        for i in 0..100_000u32 {
+            xs.push(i as f32 * x);
+        }
+
+        b.iter(|| {
+            (&xs[..]).simd_iter()
+                .simd_reduce(f32s(0.0), f32s(0.0), |acc, v| acc + v)
+                .sum()
+        });
+    }
+
+    #[bench]
     fn sums_vec_of_100_000_f32(b: &mut Bencher) {
         let x = 0.00012345f32;
         let mut xs: Vec<f32> = Vec::with_capacity(100_000);

@@ -24,9 +24,11 @@ ord_subset = { optional = true, version = "3" }
 rustc-serialize = { optional = true, version = "0.3" }
 serde = { optional = true, version = "1" }
 clap = { features = [], version = "2" }
+faster = { version = "0.4", optional = true }
 
 [features]
 default = ["ord_subset", "serde"]
+simd-benchmarks = ["faster"]
 
 [build-dependencies]
 cc = "1"
