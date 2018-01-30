@@ -37,10 +37,32 @@ macro_rules! d128 {
     }}
 }
 
+#[macro_export]
+/// A macro to construct d64 literals.
+///
+/// # Examples:
+/// ```
+/// # #[macro_use]
+/// # extern crate decimal;
+/// # fn main() {
+/// assert!(d64!(NaN).is_nan());
+/// assert!(d64!(0).is_zero());
+/// assert!(d64!(-0.1).is_negative());
+/// # }
+/// ```
+macro_rules! d64 {
+    ($lit:expr) => {{
+        use std::str::FromStr;
+        $crate::d64::from_str(stringify!($lit)).expect("Invalid decimal float literal")
+    }}
+}
+
 mod context;
 mod dec128;
+mod dec64;
 
 pub use dec128::d128;
+pub use dec64::d64;
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, PartialEq)]

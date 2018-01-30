@@ -25,15 +25,15 @@ use std::ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Div, DivAssign, R
 use std::str::FromStr;
 use std::str::from_utf8_unchecked;
 
-thread_local!(static CTX: RefCell<Context> = RefCell::new(d128::default_context()));
-thread_local!(static ROUND_DOWN: RefCell<Context> = RefCell::new(d128::with_rounding(Rounding::Down)));
-thread_local!(static HALF_UP: RefCell<Context> = RefCell::new(d128::with_rounding(Rounding::HalfUp)));
+thread_local!(static CTX: RefCell<Context> = RefCell::new(d64::default_context()));
+thread_local!(static ROUND_DOWN: RefCell<Context> = RefCell::new(d64::with_rounding(Rounding::Down)));
+thread_local!(static HALF_UP: RefCell<Context> = RefCell::new(d64::with_rounding(Rounding::HalfUp)));
 
 #[repr(C)]
 #[derive(Clone, Copy)]
-/// A 128-bit decimal floating point type.
-pub struct d128 {
-    bytes: [uint8_t; 16],
+/// A 64-bit decimal floating point type.
+pub struct d64 {
+    bytes: [uint8_t; 8],
 }
 
 #[repr(C)]
@@ -42,34 +42,34 @@ struct decNumber {
     digits: i32,
     exponent: i32,
     bits: u8,
-    // DECPUN = 3 because this is the fastest for conversion between decNumber and decQuad
-    // DECNUMDIGITS = 34 because we use decQuad only
+    // DECPUN = 3 because this is the fastest for conversion between decNumber and decDouble
+    // DECNUMDIGITS = 34 because we use decDouble only
     // 12 = ((DECNUMDIGITS+DECDPUN-1)/DECDPUN)
     lsu: [u16; 12],
 }
 
-impl Default for d128 {
+impl Default for d64 {
     fn default() -> Self {
-        d128::zero()
+        d64::zero()
     }
 }
 
 #[cfg(feature = "ord_subset")]
-impl ord_subset::OrdSubset for d128 {
+impl ord_subset::OrdSubset for d64 {
     fn is_outside_order(&self) -> bool {
         self.is_nan()
     }
 }
 
 #[cfg(feature = "ord_subset")]
-impl Into<ord_subset::OrdVar<d128>> for d128 {
-    fn into(self) -> ord_subset::OrdVar<d128> {
+impl Into<ord_subset::OrdVar<d64>> for d64 {
+    fn into(self) -> ord_subset::OrdVar<d64> {
         ord_subset::OrdVar::new(self)
     }
 }
 
 #[cfg(feature = "rustc-serialize")]
-impl Decodable for d128 {
+impl Decodable for d64 {
     fn decode<D: Decoder>(d: &mut D) -> Result<Self, D::Error> {
         let s = try!(d.read_str());
         Ok(Self::from_str(&s).expect("unreachable"))
@@ -77,20 +77,20 @@ impl Decodable for d128 {
 }
 
 #[cfg(feature = "rustc-serialize")]
-impl Encodable for d128 {
+impl Encodable for d64 {
     fn encode<E: Encoder>(&self, e: &mut E) -> Result<(), E::Error> {
         e.emit_str(&format!("{}", self))
     }
 }
 
-impl Hash for d128 {
+impl Hash for d64 {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.bytes.hash(state);
     }
 }
 
 #[cfg(feature = "serde")]
-impl serde::ser::Serialize for d128 {
+impl serde::ser::Serialize for d64 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: serde::ser::Serializer
     {
@@ -99,146 +99,146 @@ impl serde::ser::Serialize for d128 {
 }
 
 #[cfg(feature = "serde")]
-impl<'de> serde::de::Deserialize<'de> for d128 {
-    fn deserialize<D>(deserializer: D) -> Result<d128, D::Error>
+impl<'de> serde::de::Deserialize<'de> for d64 {
+    fn deserialize<D>(deserializer: D) -> Result<d64, D::Error>
         where D: serde::de::Deserializer<'de>
     {
-        deserializer.deserialize_str(d128Visitor)
+        deserializer.deserialize_str(d64Visitor)
     }
 }
 
 #[cfg(feature = "serde")]
 #[allow(non_camel_case_types)]
-struct d128Visitor;
+struct d64Visitor;
 
 #[cfg(feature = "serde")]
-impl<'de> serde::de::Visitor<'de> for d128Visitor {
-    type Value = d128;
+impl<'de> serde::de::Visitor<'de> for d64Visitor {
+    type Value = d64;
 
     fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "a d128 value")
+        write!(f, "a d64 value")
     }
 
-    fn visit_str<E>(self, s: &str) -> Result<d128, E>
+    fn visit_str<E>(self, s: &str) -> Result<d64, E>
         where E: serde::de::Error
     {
         use serde::de::Unexpected;
-        d128::from_str(s).map_err(|_| E::invalid_value(Unexpected::Str(s), &self))
+        d64::from_str(s).map_err(|_| E::invalid_value(Unexpected::Str(s), &self))
     }
 }
 
-/// Converts an i32 to d128. The result is exact and no error is possible.
-impl From<i32> for d128 {
-    fn from(val: i32) -> d128 {
+/// Converts an i32 to d64. The result is exact and no error is possible.
+impl From<i32> for d64 {
+    fn from(val: i32) -> d64 {
         unsafe {
-            let mut res: d128 = uninitialized();
-            *decQuadFromInt32(&mut res, val)
+            let mut res: d64 = uninitialized();
+            *decDoubleFromInt32(&mut res, val)
         }
     }
 }
 
-/// Converts an u32 to d128. The result is exact and no error is possible.
-impl From<u32> for d128 {
-    fn from(val: u32) -> d128 {
+/// Converts an u32 to d64. The result is exact and no error is possible.
+impl From<u32> for d64 {
+    fn from(val: u32) -> d64 {
         unsafe {
-            let mut res: d128 = uninitialized();
-            *decQuadFromUInt32(&mut res, val)
+            let mut res: d64 = uninitialized();
+            *decDoubleFromUInt32(&mut res, val)
         }
     }
 }
 
-/// Converts an u64 to d128. The result is exact and no error is possible.
-impl From<u64> for d128 {
-    fn from(mut val: u64) -> d128 {
-        let mut bcd = [0; 34];
-        let mut i = 33;
-        while val > 0 {
-            bcd[i] = (val % 10) as u8;
-            val /= 10;
-            i -= 1;
-        }
-        unsafe {
-            let mut res: d128 = uninitialized();
-            *decQuadFromBCD(&mut res, 0, bcd.as_ptr(), 0)
-        }
-    }
-}
+// /// Converts an u64 to d64. The result is exact and no error is possible.
+// impl From<u64> for d64 {
+//     fn from(mut val: u64) -> d64 {
+//         let mut bcd = [0; 34];
+//         let mut i = 33;
+//         while val > 0 {
+//             bcd[i] = (val % 10) as u8;
+//             val /= 10;
+//             i -= 1;
+//         }
+//         unsafe {
+//             let mut res: d64 = uninitialized();
+//             *decDoubleFromBCD(&mut res, 0, bcd.as_ptr(), 0)
+//         }
+//     }
+// }
 
-/// Converts an i64 to d128. The result is exact and no error is possible.
-impl From<i64> for d128 {
-    fn from(val: i64) -> d128 {
-        if val < 0 {
-            -d128::from(!(val as u64) + 1)
-        } else {
-            d128::from(val as u64)
-        }
-    }
-}
+// /// Converts an i64 to d64. The result is exact and no error is possible.
+// impl From<i64> for d64 {
+//     fn from(val: i64) -> d64 {
+//         if val < 0 {
+//             -d64::from(!(val as u64) + 1)
+//         } else {
+//             d64::from(val as u64)
+//         }
+//     }
+// }
 
-impl AsRef<d128> for d128 {
-    fn as_ref(&self) -> &d128 {
+impl AsRef<d64> for d64 {
+    fn as_ref(&self) -> &d64 {
         &self
     }
 }
 
-impl Deref for d128 {
-    type Target = [uint8_t; 16];
+impl Deref for d64 {
+    type Target = [uint8_t; 8];
 
-    fn deref(&self) -> &[uint8_t; 16] {
+    fn deref(&self) -> &[uint8_t; 8] {
         &self.bytes
     }
 }
 
-/// Converts a string to d128. The length of the coefficient and the size of the exponent are
+/// Converts a string to d64. The length of the coefficient and the size of the exponent are
 /// checked by this routine, so rounding will be applied if necessary, and this may set status
 /// flags (`UNDERFLOW`, `OVERFLOW`) will be reported, or rounding applied, as necessary. There is
 /// no limit to the coefficient length for finite inputs; NaN payloads must be integers with no
 /// more than 33 digits. Exponents may have up to nine significant digits. The syntax of the string
 /// is fully checked; if it is not valid, the result will be a quiet NaN and an error flag will be
 /// set.
-impl FromStr for d128 {
+impl FromStr for d64 {
     type Err = ();
     fn from_str(s: &str) -> Result<Self, ()> {
         let cstr = match CString::new(s) {
             Err(..) => CString::new("qNaN").unwrap(),
             Ok(cstr) => cstr,
         };
-        d128::with_context(|ctx| {
-            let mut res: d128;
+        d64::with_context(|ctx| {
+            let mut res: d64;
             unsafe {
                 res = uninitialized();
-                decQuadFromString(&mut res, cstr.as_ptr(), ctx);
+                decDoubleFromString(&mut res, cstr.as_ptr(), ctx);
             }
             Ok(res)
         })
     }
 }
 
-/// Converts this d128 to an i32. It uses Rounding::HalfEven.
-impl Into<i32> for d128 {
+/// Converts this d64 to an i32. It uses Rounding::HalfEven.
+impl Into<i32> for d64 {
     fn into(self) -> i32 {
-        d128::with_context(|ctx| unsafe { decQuadToInt32(&self, ctx, ctx.rounding) })
+        d64::with_context(|ctx| unsafe { decDoubleToInt32(&self, ctx, ctx.rounding) })
     }
 }
 
-/// Converts this d128 to an u32. It uses Rounding::HalfEven.
-impl Into<u32> for d128 {
+/// Converts this d64 to an u32. It uses Rounding::HalfEven.
+impl Into<u32> for d64 {
     fn into(self) -> u32 {
-        d128::with_context(|ctx| unsafe { decQuadToUInt32(&self, ctx, ctx.rounding) })
+        d64::with_context(|ctx| unsafe { decDoubleToUInt32(&self, ctx, ctx.rounding) })
     }
 }
 
-/// Formats a d128. Finite numbers will be converted to a string with exponential notation if the
+/// Formats a d64. Finite numbers will be converted to a string with exponential notation if the
 /// exponent is positive or if the magnitude of x is less than 1 and would require more than five
 /// zeros between the decimal point and the first significant digit. Note that strings which are
 /// not simply numbers (one of Infinity, –Infinity, NaN, or sNaN) are possible. A NaN string may
 /// have a leading – sign and/or following payload digits. No digits follow the NaN string if the
 /// payload is 0.
-impl fmt::Display for d128 {
+impl fmt::Display for d64 {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         let mut buf = [0; 43];
         unsafe {
-            decQuadToString(self, buf.as_mut().as_mut_ptr());
+            decDoubleToString(self, buf.as_mut().as_mut_ptr());
             let cstr = CStr::from_ptr(buf.as_ptr());
             fmt.pad(from_utf8_unchecked(cstr.to_bytes()))
         }
@@ -246,27 +246,27 @@ impl fmt::Display for d128 {
 }
 
 /// Same as `fmt::Display`.
-impl fmt::Debug for d128 {
+impl fmt::Debug for d64 {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt::Display::fmt(self, fmt)
     }
 }
 
-/// Formats a d128 with engineering notation. This is the same as fmt::Display except that if
+/// Formats a d64 with engineering notation. This is the same as fmt::Display except that if
 /// exponential notation is used the exponent will be a multiple of 3.
-impl fmt::LowerExp for d128 {
+impl fmt::LowerExp for d64 {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         let mut buf = [0; 43];
         unsafe {
-            decQuadToEngString(self, buf.as_mut().as_mut_ptr());
+            decDoubleToEngString(self, buf.as_mut().as_mut_ptr());
             let cstr = CStr::from_ptr(buf.as_ptr());
             fmt.pad(from_utf8_unchecked(cstr.to_bytes()))
         }
     }
 }
 
-/// Formats a d128 to hexadecimal binary representation.
-impl fmt::LowerHex for d128 {
+/// Formats a d64 to hexadecimal binary representation.
+impl fmt::LowerHex for d64 {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         for b in self.bytes.iter().rev() {
             try!(write!(fmt, "{:02x}", b));
@@ -275,14 +275,14 @@ impl fmt::LowerHex for d128 {
     }
 }
 
-impl PartialEq<d128> for d128 {
-    fn eq(&self, other: &d128) -> bool {
+impl PartialEq<d64> for d64 {
+    fn eq(&self, other: &d64) -> bool {
         self.compare(other).is_zero()
     }
 }
 
-impl PartialOrd<d128> for d128 {
-    fn partial_cmp(&self, other: &d128) -> Option<::std::cmp::Ordering> {
+impl PartialOrd<d64> for d64 {
+    fn partial_cmp(&self, other: &d64) -> Option<::std::cmp::Ordering> {
         use std::cmp::Ordering;
         match self.compare(other) {
             v if v.is_nan() => None,
@@ -377,73 +377,73 @@ macro_rules! ffi_unary_assign_op {
     }
 }
 
-ffi_binary_op!(impl Add, add, decQuadAdd for d128);
-ffi_binary_op!(impl Sub, sub, decQuadSubtract for d128);
-ffi_binary_op!(impl Mul, mul, decQuadMultiply for d128);
-ffi_binary_op!(impl Div, div, decQuadDivide for d128);
+ffi_binary_op!(impl Add, add, decDoubleAdd for d64);
+ffi_binary_op!(impl Sub, sub, decDoubleSubtract for d64);
+ffi_binary_op!(impl Mul, mul, decDoubleMultiply for d64);
+ffi_binary_op!(impl Div, div, decDoubleDivide for d64);
 ffi_binary_op!(
 /// The operands must be zero or positive, an integer (finite with zero exponent) and comprise
 /// only zeros and/or ones; if not, INVALID_OPERATION is set.
-    impl BitAnd, bitand, decQuadAnd for d128);
+    impl BitAnd, bitand, decDoubleAnd for d64);
 ffi_binary_op!(
 /// The operands must be zero or positive, an integer (finite with zero exponent) and comprise
 /// only zeros and/or ones; if not, INVALID_OPERATION is set.
-    impl BitOr, bitor, decQuadOr for d128);
+    impl BitOr, bitor, decDoubleOr for d64);
 ffi_binary_op!(
 /// The operands must be zero or positive, an integer (finite with zero exponent) and comprise
 /// only zeros and/or ones; if not, INVALID_OPERATION is set.
-    impl BitXor, bitxor, decQuadXor for d128);
-ffi_binary_op!(impl Rem, rem, decQuadRemainder for d128);
+    impl BitXor, bitxor, decDoubleXor for d64);
+ffi_binary_op!(impl Rem, rem, decDoubleRemainder for d64);
 
-ffi_unary_assign_op!(impl AddAssign, add_assign, decQuadAdd for d128);
-ffi_unary_assign_op!(impl SubAssign, sub_assign, decQuadSubtract for d128);
-ffi_unary_assign_op!(impl MulAssign, mul_assign, decQuadMultiply for d128);
-ffi_unary_assign_op!(impl DivAssign, div_assign, decQuadDivide for d128);
-ffi_unary_assign_op!(impl BitAndAssign, bitand_assign, decQuadAnd for d128);
-ffi_unary_assign_op!(impl BitOrAssign, bitor_assign, decQuadOr for d128);
-ffi_unary_assign_op!(impl BitXorAssign, bitxor_assign, decQuadXor for d128);
-ffi_unary_assign_op!(impl RemAssign, rem_assign, decQuadRemainder for d128);
+ffi_unary_assign_op!(impl AddAssign, add_assign, decDoubleAdd for d64);
+ffi_unary_assign_op!(impl SubAssign, sub_assign, decDoubleSubtract for d64);
+ffi_unary_assign_op!(impl MulAssign, mul_assign, decDoubleMultiply for d64);
+ffi_unary_assign_op!(impl DivAssign, div_assign, decDoubleDivide for d64);
+ffi_unary_assign_op!(impl BitAndAssign, bitand_assign, decDoubleAnd for d64);
+ffi_unary_assign_op!(impl BitOrAssign, bitor_assign, decDoubleOr for d64);
+ffi_unary_assign_op!(impl BitXorAssign, bitxor_assign, decDoubleXor for d64);
+ffi_unary_assign_op!(impl RemAssign, rem_assign, decDoubleRemainder for d64);
 
-ffi_unary_op!(impl Neg, neg, decQuadMinus for d128);
+ffi_unary_op!(impl Neg, neg, decDoubleMinus for d64);
 ffi_unary_op!(
 /// The operand must be zero or positive, an integer (finite with zero exponent) and comprise
 /// only zeros and/or ones; if not, INVALID_OPERATION is set.
-    impl Not, not, decQuadInvert for d128);
+    impl Not, not, decDoubleInvert for d64);
 
 /// The result is `self` with the digits of the coefficient shifted to the left without adjusting
 /// the exponent or the sign of `self`. Any digits ‘shifted in’ from the right will be 0. `amount`
 /// is the count of positions to shift and must be a in the range –34 through +34. NaNs are
 /// propagated as usual. If `self` is infinite the result is Infinity of the same sign. No status
 /// is set unless `amount` is invalid or `self` is an sNaN.
-impl Shl<usize> for d128 {
-    type Output = d128;
+impl Shl<usize> for d64 {
+    type Output = d64;
 
-    fn shl(mut self, amount: usize) -> d128 {
-        let shift = d128::from(amount as u32);
-        d128::with_context(|ctx| unsafe { *decQuadShift(&mut self, &self, &shift, ctx) })
+    fn shl(mut self, amount: usize) -> d64 {
+        let shift = d64::from(amount as u32);
+        d64::with_context(|ctx| unsafe { *decDoubleShift(&mut self, &self, &shift, ctx) })
     }
 }
 
-impl<'a> Shl<usize> for &'a d128 {
-    type Output = d128;
+impl<'a> Shl<usize> for &'a d64 {
+    type Output = d64;
 
-    fn shl(self, amount: usize) -> d128 {
-        let shift = d128::from(amount as u32);
-        d128::with_context(|ctx| {
+    fn shl(self, amount: usize) -> d64 {
+        let shift = d64::from(amount as u32);
+        d64::with_context(|ctx| {
             unsafe {
-                let mut res: d128 = uninitialized();
-                *decQuadShift(&mut res, self, &shift, ctx)
+                let mut res: d64 = uninitialized();
+                *decDoubleShift(&mut res, self, &shift, ctx)
             }
         })
     }
 }
 
-impl ShlAssign<usize> for d128 {
+impl ShlAssign<usize> for d64 {
     fn shl_assign(&mut self, amount: usize) {
-        let shift = d128::from(amount as u32);
-        d128::with_context(|ctx| {
+        let shift = d64::from(amount as u32);
+        d64::with_context(|ctx| {
             unsafe {
-                decQuadShift(self, self, &shift, ctx);
+                decDoubleShift(self, self, &shift, ctx);
             }
         })
     }
@@ -454,53 +454,53 @@ impl ShlAssign<usize> for d128 {
 /// is the count of positions to shift and must be a in the range –34 through +34. NaNs are
 /// propagated as usual. If `self` is infinite the result is Infinity of the same sign. No status
 /// is set unless `amount` is invalid or `self` is an sNaN.
-impl Shr<usize> for d128 {
-    type Output = d128;
+impl Shr<usize> for d64 {
+    type Output = d64;
 
-    fn shr(mut self, amount: usize) -> d128 {
-        let shift = -d128::from(amount as u32);
-        d128::with_context(|ctx| unsafe { *decQuadShift(&mut self, &self, &shift, ctx) })
+    fn shr(mut self, amount: usize) -> d64 {
+        let shift = -d64::from(amount as u32);
+        d64::with_context(|ctx| unsafe { *decDoubleShift(&mut self, &self, &shift, ctx) })
     }
 }
 
-impl<'a> Shr<usize> for &'a d128 {
-    type Output = d128;
+impl<'a> Shr<usize> for &'a d64 {
+    type Output = d64;
 
-    fn shr(self, amount: usize) -> d128 {
-        let shift = -d128::from(amount as u32);
-        d128::with_context(|ctx| {
+    fn shr(self, amount: usize) -> d64 {
+        let shift = -d64::from(amount as u32);
+        d64::with_context(|ctx| {
             unsafe {
-                let mut res: d128 = uninitialized();
-                *decQuadShift(&mut res, self, &shift, ctx)
+                let mut res: d64 = uninitialized();
+                *decDoubleShift(&mut res, self, &shift, ctx)
             }
         })
     }
 }
 
-impl ShrAssign<usize> for d128 {
+impl ShrAssign<usize> for d64 {
     fn shr_assign(&mut self, amount: usize) {
-        let shift = -d128::from(amount as u32);
-        d128::with_context(|ctx| {
+        let shift = -d64::from(amount as u32);
+        d64::with_context(|ctx| {
             unsafe {
-                decQuadShift(self, self, &shift, ctx);
+                decDoubleShift(self, self, &shift, ctx);
             }
         })
     }
 }
 
-impl<T> Sum<T> for d128 where T: Borrow<d128> {
-    fn sum<I: IntoIterator<Item = T>>(iter: I) -> d128 {
+impl<T> Sum<T> for d64 where T: Borrow<d64> {
+    fn sum<I: IntoIterator<Item = T>>(iter: I) -> d64 {
         iter.into_iter()
-            .fold(d128::zero(), |acc, val|
+            .fold(d64::zero(), |acc, val|
                 acc + val.borrow())
     }
 }
 
-impl d128 {
+impl d64 {
     fn default_context() -> Context {
         unsafe {
             let mut res: Context = uninitialized();
-            *decContextDefault(&mut res, 128)
+            *decContextDefault(&mut res, 64)
         }
     }
 
@@ -508,7 +508,7 @@ impl d128 {
     fn with_rounding(rounding: Rounding) -> Context {
         unsafe {
             let mut res: Context = uninitialized();
-            let mut ctx = *decContextDefault(&mut res, 128);
+            let mut ctx = *decContextDefault(&mut res, 64);
             decContextSetRounding(&mut ctx, rounding as u32);
             ctx
         }
@@ -532,36 +532,36 @@ impl d128 {
         CTX.with(|ctx| f(&mut ctx.borrow_mut()))
     }
     
-    /// Creates a d128 from raw bytes. Endianess is host dependent.
-    pub const fn from_raw_bytes(bytes: [u8; 16]) -> d128 {
-        d128 { bytes }
+    /// Creates a d64 from raw bytes. Endianess is host dependent.
+    pub const fn from_raw_bytes(bytes: [u8; 8]) -> d64 {
+        d64 { bytes }
     }
 
-    /// Returns raw bytes for this d128. Endianess is host dependent.
-    pub fn to_raw_bytes(&self) -> [u8; 16] {
+    /// Returns raw bytes for this d64. Endianess is host dependent.
+    pub fn to_raw_bytes(&self) -> [u8; 8] {
         self.bytes
     }
 
     /// Returns the thread local status.
     pub fn get_status() -> Status {
-        d128::with_context(|ctx| Status::from_bits_truncate(ctx.status))
+        d64::with_context(|ctx| Status::from_bits_truncate(ctx.status))
     }
 
     /// Sets the thread local status.
     pub fn set_status(status: Status) {
-        d128::with_context(|ctx| ctx.status = status.bits());
+        d64::with_context(|ctx| ctx.status = status.bits());
     }
 
     /// Reads the hex binary representation from a string. This is the reverse of formatting with
     /// {:x}.
-    pub fn from_hex(s: &str) -> d128 {
+    pub fn from_hex(s: &str) -> d64 {
         if s.len() != 32 {
             Self::from_str("qNaN").unwrap()
         } else {
             unsafe {
-                let mut res: d128 = uninitialized();
+                let mut res: d64 = uninitialized();
                 for (i, octet) in s.as_bytes().chunks(2).rev().enumerate() {
-                    res.bytes[i] = match u8::from_str_radix(from_utf8_unchecked(octet), 16) {
+                    res.bytes[i] = match u8::from_str_radix(from_utf8_unchecked(octet), 8) {
                         Ok(val) => val,
                         Err(..) => return Self::from_str("qNaN").unwrap(),
                     };
@@ -573,36 +573,36 @@ impl d128 {
 
     // Utilities and conversions, extractors, etc.
 
-    /// Returns the d128 representing +0.
-    pub fn zero() -> d128 {
+    /// Returns the d64 representing +0.
+    pub fn zero() -> d64 {
         unsafe {
             let mut res = uninitialized();
-            *decQuadZero(&mut res)
+            *decDoubleZero(&mut res)
         }
     }
 
-    /// Returns the d128 representing +Infinity.
-    pub fn infinity() -> d128 {
-        d128!(Infinity)
+    /// Returns the d64 representing +Infinity.
+    pub fn infinity() -> d64 {
+        d64!(Infinity)
     }
 
-    /// Returns the d128 representing -Infinity.
-    pub fn neg_infinity() -> d128 {
-        d128!(-Infinity)
+    /// Returns the d64 representing -Infinity.
+    pub fn neg_infinity() -> d64 {
+        d64!(-Infinity)
     }
 
     // Computational.
 
     /// Returns the absolute value of `self`.
-    pub fn abs(mut self) -> d128 {
-        d128::with_context(|ctx| unsafe { *decQuadAbs(&mut self, &self, ctx) })
+    pub fn abs(mut self) -> d64 {
+        d64::with_context(|ctx| unsafe { *decDoubleAbs(&mut self, &self, ctx) })
     }
 
     /// Calculates the fused multiply-add `self` × `a` + `b` and returns the result. The multiply
     /// is carried out first and is exact, so this operation has only the one, final, rounding.
-    pub fn mul_add<O: AsRef<d128>>(mut self, a: O, b: O) -> d128 {
-        d128::with_context(|ctx| unsafe {
-            *decQuadFMA(&mut self, &self, a.as_ref(), b.as_ref(), ctx)
+    pub fn mul_add<O: AsRef<d64>>(mut self, a: O, b: O) -> d64 {
+        d64::with_context(|ctx| unsafe {
+            *decDoubleFMA(&mut self, &self, a.as_ref(), b.as_ref(), ctx)
         })
     }
 
@@ -613,36 +613,36 @@ impl d128 {
     /// `DIVISION_BY_ZERO` flag is set. If `self` is less than zero, the absolute value of `self`
     /// is used. If `self` is 1, the result is 0. NaNs are handled (propagated) as for arithmetic
     /// operations.
-    pub fn logb(mut self) -> d128 {
-        d128::with_context(|ctx| unsafe { *decQuadLogB(&mut self, &self, ctx) })
+    pub fn logb(mut self) -> d64 {
+        d64::with_context(|ctx| unsafe { *decDoubleLogB(&mut self, &self, ctx) })
     }
 
     /// If both `self` and `other` are numeric (not NaNs) this returns the larger of the two
     /// (compared using total ordering, to give a well-defined result). If either (but not both of)
     /// is a quiet NaN then the other argument is the result; otherwise NaNs are handled as for
     /// arithmetic operations.
-    pub fn max<O: AsRef<d128>>(mut self, other: O) -> d128 {
-        d128::with_context(|ctx| unsafe { *decQuadMax(&mut self, &self, other.as_ref(), ctx) })
+    pub fn max<O: AsRef<d64>>(mut self, other: O) -> d64 {
+        d64::with_context(|ctx| unsafe { *decDoubleMax(&mut self, &self, other.as_ref(), ctx) })
     }
 
     /// If both `self` and `other`  are numeric (not NaNs) this returns the smaller of the two
     /// (compared using total ordering, to give a well-defined result). If either (but not both of)
     /// is a quiet NaN then the other argument is the result; otherwise NaNs are handled as for
     /// arithmetic operations.
-    pub fn min<O: AsRef<d128>>(mut self, other: O) -> d128 {
-        d128::with_context(|ctx| unsafe { *decQuadMin(&mut self, &self, other.as_ref(), ctx) })
+    pub fn min<O: AsRef<d64>>(mut self, other: O) -> d64 {
+        d64::with_context(|ctx| unsafe { *decDoubleMin(&mut self, &self, other.as_ref(), ctx) })
     }
 
-    /// Returns the ‘next’ d128 to `self` in the direction of +Infinity according to IEEE 754 rules
+    /// Returns the ‘next’ d64 to `self` in the direction of +Infinity according to IEEE 754 rules
     /// for nextUp. The only status possible is `INVALID_OPERATION` (from an sNaN).
-    pub fn next(mut self) -> d128 {
-        d128::with_context(|ctx| unsafe { *decQuadNextPlus(&mut self, &self, ctx) })
+    pub fn next(mut self) -> d64 {
+        d64::with_context(|ctx| unsafe { *decDoubleNextPlus(&mut self, &self, ctx) })
     }
 
-    /// Returns the ‘next’ d128 to `self` in the direction of –Infinity according to IEEE 754 rules
+    /// Returns the ‘next’ d64 to `self` in the direction of –Infinity according to IEEE 754 rules
     /// for nextDown. The only status possible is `INVALID_OPERATION` (from an sNaN).
-    pub fn previous(mut self) -> d128 {
-        d128::with_context(|ctx| unsafe { *decQuadNextMinus(&mut self, &self, ctx) })
+    pub fn previous(mut self) -> d64 {
+        d64::with_context(|ctx| unsafe { *decDoubleNextMinus(&mut self, &self, ctx) })
     }
 
     /// The number is set to the result of raising `self` to the power of `exp`. Results will be
@@ -653,14 +653,14 @@ impl d128 {
     /// cases. This is a mathematical function; the 10<sup>6</sup> restrictions on precision and
     /// range apply as described above, except that the normal range of values is allowed if `exp`
     /// has an integral value in the range –1999999997 through +999999999.
-    pub fn pow<O: AsRef<d128>>(mut self, exp: O) -> d128 {
-        d128::with_context(|ctx| unsafe {
+    pub fn pow<O: AsRef<d64>>(mut self, exp: O) -> d64 {
+        d64::with_context(|ctx| unsafe {
             let mut num_self: decNumber = uninitialized();
             let mut num_exp: decNumber = uninitialized();
-            decimal128ToNumber(&self, &mut num_self);
-            decimal128ToNumber(exp.as_ref(), &mut num_exp);
+            decimal64ToNumber(&self, &mut num_self);
+            decimal64ToNumber(exp.as_ref(), &mut num_exp);
             decNumberPower(&mut num_self, &num_self, &num_exp, ctx);
-            *decimal128FromNumber(&mut self, &num_self, ctx)
+            *decimal64FromNumber(&mut self, &num_self, ctx)
         })
     }
 
@@ -669,14 +669,14 @@ impl d128 {
     /// respectively). Inexact results will almost always be correctly rounded, but may be up to 1
     /// ulp (unit in last place) in error in rare cases. This is a mathematical function; the
     /// 10<sup>6</sup> restrictions on precision and range apply as described above.
-    pub fn exp<O: AsRef<d128>>(mut self, exp: O) -> d128 {
-        d128::with_context(|ctx| unsafe {
+    pub fn exp<O: AsRef<d64>>(mut self, exp: O) -> d64 {
+        d64::with_context(|ctx| unsafe {
             let mut num_self: decNumber = uninitialized();
             let mut num_exp: decNumber = uninitialized();
-            decimal128ToNumber(&self, &mut num_self);
-            decimal128ToNumber(exp.as_ref(), &mut num_exp);
+            decimal64ToNumber(&self, &mut num_self);
+            decimal64ToNumber(exp.as_ref(), &mut num_exp);
             decNumberExp(&mut num_self, &num_self, &num_exp, ctx);
-            *decimal128FromNumber(&mut self, &num_self, ctx)
+            *decimal64FromNumber(&mut self, &num_self, ctx)
         })
     }
 
@@ -686,12 +686,12 @@ impl d128 {
     /// be correctly rounded, but may be up to 1 ulp (unit in last place) in error in rare cases.
     /// This is a mathematical function; the 10<sup>6</sup> restrictions on precision and range
     /// apply as described above.
-    pub fn ln(mut self) -> d128 {
-        d128::with_context(|ctx| unsafe {
+    pub fn ln(mut self) -> d64 {
+        d64::with_context(|ctx| unsafe {
             let mut num_self: decNumber = uninitialized();
-            decimal128ToNumber(&self, &mut num_self);
+            decimal64ToNumber(&self, &mut num_self);
             decNumberLn(&mut num_self, &num_self, ctx);
-            *decimal128FromNumber(&mut self, &num_self, ctx)
+            *decimal64FromNumber(&mut self, &num_self, ctx)
         })
     }
 
@@ -701,25 +701,25 @@ impl d128 {
     /// will almost always be correctly rounded, but may be up to 1 ulp (unit in last place) in
     /// error in rare cases. This is a mathematical function; the 10<sup>6</sup> restrictions on
     /// precision and range apply as described above.
-    pub fn log10(mut self) -> d128 {
-        d128::with_context(|ctx| unsafe {
+    pub fn log10(mut self) -> d64 {
+        d64::with_context(|ctx| unsafe {
             let mut num_self: decNumber = uninitialized();
-            decimal128ToNumber(&self, &mut num_self);
+            decimal64ToNumber(&self, &mut num_self);
             decNumberLog10(&mut num_self, &num_self, ctx);
-            *decimal128FromNumber(&mut self, &num_self, ctx)
+            *decimal64FromNumber(&mut self, &num_self, ctx)
         })
     }
 
-    /// Returns the ‘next’ d128 to `self` in the direction of `other` according to proposed IEEE
+    /// Returns the ‘next’ d64 to `self` in the direction of `other` according to proposed IEEE
     /// 754  rules for nextAfter.  If `self` == `other` the result is `self`. If either operand is
     /// a NaN the result is as for arithmetic operations. Otherwise (the operands are numeric and
     /// different) the result of adding (or subtracting) an infinitesimal positive amount to `self`
     /// and rounding towards +Infinity (or –Infinity) is returned, depending on whether `other` is
     /// larger  (or smaller) than `self`. The addition will set flags, except that if the result is
     /// normal  (finite, non-zero, and not subnormal) no flags are set.
-    pub fn towards<O: AsRef<d128>>(mut self, other: O) -> d128 {
-        d128::with_context(|ctx| unsafe {
-            *decQuadNextToward(&mut self, &self, other.as_ref(), ctx)
+    pub fn towards<O: AsRef<d64>>(mut self, other: O) -> d64 {
+        d64::with_context(|ctx| unsafe {
+            *decDoubleNextToward(&mut self, &self, other.as_ref(), ctx)
         })
     }
 
@@ -734,15 +734,15 @@ impl d128 {
     /// extern crate decimal;
     ///
     /// fn main() {
-    ///     let prec = d128!(0.1);
-    ///     assert_eq!(d128!(0.400012342423).quantize(prec), d128!(0.4));
+    ///     let prec = d64!(0.1);
+    ///     assert_eq!(d64!(0.400012342423).quantize(prec), d64!(0.4));
     ///     // uses default rounding (half even)
-    ///     assert_eq!(d128!(0.05).quantize(prec), d128!(0.0));
-    ///     assert_eq!(d128!(0.15).quantize(prec), d128!(0.2));
+    ///     assert_eq!(d64!(0.05).quantize(prec), d64!(0.0));
+    ///     assert_eq!(d64!(0.15).quantize(prec), d64!(0.2));
     /// }
     /// ```
-    pub fn quantize<O: AsRef<d128>>(mut self, other: O) -> d128 {
-        d128::with_context(|ctx| unsafe { *decQuadQuantize(&mut self, &self, other.as_ref(), ctx) })
+    pub fn quantize<O: AsRef<d64>>(mut self, other: O) -> d64 {
+        d64::with_context(|ctx| unsafe { *decDoubleQuantize(&mut self, &self, other.as_ref(), ctx) })
     }
 
     /// Like `quantize`, but uses `Rounding::Down`.
@@ -754,14 +754,14 @@ impl d128 {
     /// extern crate decimal;
     ///
     /// fn main() {
-    ///     let prec = d128!(0.1);
-    ///     assert_eq!(d128!(0.05).truncate(prec), d128!(0.0));
-    ///     assert_eq!(d128!(0.15).truncate(prec), d128!(0.1));
-    ///     assert_eq!(d128!(0.19).truncate(prec), d128!(0.1));
+    ///     let prec = d64!(0.1);
+    ///     assert_eq!(d64!(0.05).truncate(prec), d64!(0.0));
+    ///     assert_eq!(d64!(0.15).truncate(prec), d64!(0.1));
+    ///     assert_eq!(d64!(0.19).truncate(prec), d64!(0.1));
     /// }
     /// ```
-    pub fn truncate<O: AsRef<d128>>(mut self, other: O) -> d128 {
-        d128::with_round_down(|ctx| unsafe { *decQuadQuantize(&mut self, &self, other.as_ref(), ctx) })
+    pub fn truncate<O: AsRef<d64>>(mut self, other: O) -> d64 {
+        d64::with_round_down(|ctx| unsafe { *decDoubleQuantize(&mut self, &self, other.as_ref(), ctx) })
     }
 
     /// Like `quantize`, but uses `Rounding::HalfUp`.
@@ -773,15 +773,15 @@ impl d128 {
     /// extern crate decimal;
     ///
     /// fn main() {
-    ///     let prec = d128!(0.1);
-    ///     assert_eq!(d128!(0.15).round(prec), d128!(0.2));
-    ///     assert_eq!(d128!(0.14999999999).round(prec), d128!(0.1));
-    ///     assert_eq!(d128!(0.19).round(prec), d128!(0.2));
-    ///     assert_eq!(d128!(0.05).round(prec), d128!(0.1));
+    ///     let prec = d64!(0.1);
+    ///     assert_eq!(d64!(0.15).round(prec), d64!(0.2));
+    ///     assert_eq!(d64!(0.14999999999).round(prec), d64!(0.1));
+    ///     assert_eq!(d64!(0.19).round(prec), d64!(0.2));
+    ///     assert_eq!(d64!(0.05).round(prec), d64!(0.1));
     /// }
     /// ```
-    pub fn round<O: AsRef<d128>>(mut self, other: O) -> d128 {
-        d128::with_half_up(|ctx| unsafe { *decQuadQuantize(&mut self, &self, other.as_ref(), ctx) })
+    pub fn round<O: AsRef<d64>>(mut self, other: O) -> d64 {
+        d64::with_half_up(|ctx| unsafe { *decDoubleQuantize(&mut self, &self, other.as_ref(), ctx) })
     }
 
     /// Returns a copy of `self` with its coefficient reduced to its shortest possible form without
@@ -789,8 +789,8 @@ impl d128 {
     /// coefficient (some may remain when the number is very close to the most positive or most
     /// negative number). Infinities and NaNs are unchanged and no status is set unless `self` is
     /// an sNaN. If `self` is a zero the result exponent is 0.
-    pub fn reduce(mut self) -> d128 {
-        d128::with_context(|ctx| unsafe { *decQuadReduce(&mut self, &self, ctx) })
+    pub fn reduce(mut self) -> d64 {
+        d64::with_context(|ctx| unsafe { *decDoubleReduce(&mut self, &self, ctx) })
     }
 
     /// The result is a copy of `self` with the digits of the coefficient rotated to the left (if
@@ -799,15 +799,15 @@ impl d128 {
     /// finite integer (with exponent=0) in the range -34 through +34. NaNs are propagated as
     /// usual. If `self` is infinite the result is Infinity of the same sign. No status is set
     /// unless `amount` is invalid or an operand is an sNaN.
-    pub fn rotate<O: AsRef<d128>>(mut self, amount: O) -> d128 {
-        d128::with_context(|ctx| unsafe { *decQuadRotate(&mut self, &self, amount.as_ref(), ctx) })
+    pub fn rotate<O: AsRef<d64>>(mut self, amount: O) -> d64 {
+        d64::with_context(|ctx| unsafe { *decDoubleRotate(&mut self, &self, amount.as_ref(), ctx) })
     }
 
     /// This calculates `self` × 10<sup>`other`</sup> and returns the result. `other` must be an
     /// integer (finite with exponent=0) in the range ±2 × (34 + 6144), typically resulting from
     /// `logb`. Underflow and overflow might occur. NaNs propagate as usual.
-    pub fn scaleb<O: AsRef<d128>>(mut self, other: O) -> d128 {
-        d128::with_context(|ctx| unsafe { *decQuadScaleB(&mut self, &self, other.as_ref(), ctx) })
+    pub fn scaleb<O: AsRef<d64>>(mut self, other: O) -> d64 {
+        d64::with_context(|ctx| unsafe { *decDoubleScaleB(&mut self, &self, other.as_ref(), ctx) })
     }
 
     // Comparisons.
@@ -816,35 +816,35 @@ impl d128 {
     /// or NaN (unordered); –1 indicates that `self` is less than `other`, 0 indicates that they
     /// are numerically equal, and 1 indicates that `self` is greater than `other`. NaN is returned
     /// only if `self` or `other` is a NaN.
-    pub fn compare<O: AsRef<d128>>(&self, other: O) -> d128 {
-        d128::with_context(|ctx| unsafe {
-            let mut res: d128 = uninitialized();
-            *decQuadCompare(&mut res, self, other.as_ref(), ctx)
+    pub fn compare<O: AsRef<d64>>(&self, other: O) -> d64 {
+        d64::with_context(|ctx| unsafe {
+            let mut res: d64 = uninitialized();
+            *decDoubleCompare(&mut res, self, other.as_ref(), ctx)
         })
     }
 
     /// Compares `self` and `other` using the IEEE 754 total ordering (which takes into account the
     /// exponent) and returns the result. No status is set (a signaling NaN is ordered between
     /// Infinity and NaN). The result will be –1, 0, or 1.
-    pub fn compare_total<O: AsRef<d128>>(&self, other: O) -> d128 {
-        d128::with_context(|ctx| unsafe {
-            let mut res: d128 = uninitialized();
-            *decQuadCompareTotal(&mut res, self, other.as_ref(), ctx)
+    pub fn compare_total<O: AsRef<d64>>(&self, other: O) -> d64 {
+        d64::with_context(|ctx| unsafe {
+            let mut res: d64 = uninitialized();
+            *decDoubleCompareTotal(&mut res, self, other.as_ref(), ctx)
         })
     }
 
     // Copies.
 
     /// Returns `self` ensuring that the encoding is canonical.
-    pub fn canonical(mut self) -> d128 {
-        unsafe { *decQuadCanonical(&mut self, &self) }
+    pub fn canonical(mut self) -> d64 {
+        unsafe { *decDoubleCanonical(&mut self, &self) }
     }
 
     // Non-computational.
 
     /// Returns the class of `self`.
     pub fn class(&self) -> Class {
-        unsafe { decQuadClass(self) }
+        unsafe { decDoubleClass(self) }
     }
 
     /// Same as `class()` but returns `std::num::FpCategory`.
@@ -864,87 +864,87 @@ impl d128 {
     /// Returns the number of significant digits in `self`. If `self` is a zero or is infinite, 1
     /// is returned. If `self` is a NaN then the number of digits in the payload is returned.
     pub fn digits(&self) -> u32 {
-        unsafe { decQuadDigits(self) }
+        unsafe { decDoubleDigits(self) }
     }
 
     /// Returns `true` if the encoding of `self` is canonical, or `false` otherwise.
     pub fn is_canonical(&self) -> bool {
-        unsafe { decQuadIsCanonical(self) != 0 }
+        unsafe { decDoubleIsCanonical(self) != 0 }
     }
 
     /// Returns `true` if `self` is neither infinite nor a NaN, or `false` otherwise.
     pub fn is_finite(&self) -> bool {
-        unsafe { decQuadIsFinite(self) != 0 }
+        unsafe { decDoubleIsFinite(self) != 0 }
     }
 
     /// Returns `true` if `self` is finite and its exponent is zero, or `false` otherwise.
     pub fn is_integer(&self) -> bool {
-        unsafe { decQuadIsInteger(self) != 0 }
+        unsafe { decDoubleIsInteger(self) != 0 }
     }
 
     /// Returns `true` if `self`  is a valid argument for logical operations (that is, `self` is
     /// zero or positive, an integer (finite with a zero exponent) and comprises only zeros and/or
     /// ones), or `false` otherwise.
     pub fn is_logical(&self) -> bool {
-        unsafe { decQuadIsLogical(self) != 0 }
+        unsafe { decDoubleIsLogical(self) != 0 }
     }
 
     /// Returns `true` if the encoding of `self` is an infinity, or `false` otherwise.
     pub fn is_infinite(&self) -> bool {
-        unsafe { decQuadIsInfinite(self) != 0 }
+        unsafe { decDoubleIsInfinite(self) != 0 }
     }
 
     /// Returns `true` if `self` is a NaN (quiet or signaling), or `false` otherwise.
     pub fn is_nan(&self) -> bool {
-        unsafe { decQuadIsNaN(self) != 0 }
+        unsafe { decDoubleIsNaN(self) != 0 }
     }
 
     /// Returns `true` if `self` is less than zero and not a NaN, or `false` otherwise.
     pub fn is_negative(&self) -> bool {
-        unsafe { decQuadIsNegative(self) != 0 }
+        unsafe { decDoubleIsNegative(self) != 0 }
     }
 
     /// Returns `true` if `self` is a normal number (that is, is finite, non-zero, and not
     /// subnormal), or `false` otherwise.
     pub fn is_normal(&self) -> bool {
-        unsafe { decQuadIsNormal(self) != 0 }
+        unsafe { decDoubleIsNormal(self) != 0 }
     }
 
     /// Returns `true` if `self` is greater than zero and not a NaN, or `false` otherwise.
     pub fn is_positive(&self) -> bool {
-        unsafe { decQuadIsPositive(self) != 0 }
+        unsafe { decDoubleIsPositive(self) != 0 }
     }
 
     /// Returns `true` if `self` is a signaling NaN, or `false` otherwise.
     pub fn is_signaling(&self) -> bool {
-        unsafe { decQuadIsSignaling(self) != 0 }
+        unsafe { decDoubleIsSignaling(self) != 0 }
     }
 
     /// Returns `true` if `self` has a minus sign, or `false` otherwise. Note that zeros and NaNs
     /// may have a minus sign.
     pub fn is_signed(&self) -> bool {
-        unsafe { decQuadIsSigned(self) != 0 }
+        unsafe { decDoubleIsSigned(self) != 0 }
     }
 
     /// Returns `true` if `self` is subnormal (that is, finite, non-zero, and with magnitude less
     /// than 10<sup>-6143</sup>), or `false` otherwise.
     pub fn is_subnormal(&self) -> bool {
-        unsafe { decQuadIsSubnormal(self) != 0 }
+        unsafe { decDoubleIsSubnormal(self) != 0 }
     }
 
     /// Returns `true` if `self` is zero, or `false` otherwise.
     pub fn is_zero(&self) -> bool {
-        unsafe { decQuadIsZero(self) != 0 }
+        unsafe { decDoubleIsZero(self) != 0 }
     }
 
-    pub fn finite_or(self, default: d128) -> d128 {
+    pub fn finite_or(self, default: d64) -> d64 {
         match self.is_finite() {
             true => self,
             false => default
         }
     }
 
-    pub fn finite_or_else<F: FnOnce() -> d128>(self, f: F) -> d128 {
+    pub fn finite_or_else<F: FnOnce() -> d64>(self, f: F) -> d64 {
         match self.is_finite() {
             true => self,
             false => f()
@@ -957,112 +957,112 @@ extern "C" {
     fn decContextDefault(ctx: *mut Context, kind: uint32_t) -> *mut Context;
     fn decContextSetRounding(ctx: *mut Context, rounding: uint32_t);
     // Utilities and conversions, extractors, etc.
-    fn decQuadFromBCD(res: *mut d128, exp: i32, bcd: *const u8, sign: i32) -> *mut d128;
-    fn decQuadFromInt32(res: *mut d128, src: int32_t) -> *mut d128;
-    fn decQuadFromString(res: *mut d128, s: *const c_char, ctx: *mut Context) -> *mut d128;
-    fn decQuadFromUInt32(res: *mut d128, src: uint32_t) -> *mut d128;
-    fn decQuadToString(src: *const d128, s: *mut c_char) -> *mut c_char;
-    fn decQuadToInt32(src: *const d128, ctx: *mut Context, round: Rounding) -> int32_t;
-    fn decQuadToUInt32(src: *const d128, ctx: *mut Context, round: Rounding) -> uint32_t;
-    fn decQuadToEngString(res: *const d128, s: *mut c_char) -> *mut c_char;
-    fn decQuadZero(res: *mut d128) -> *mut d128;
+    fn decDoubleFromBCD(res: *mut d64, exp: i32, bcd: *const u8, sign: i32) -> *mut d64;
+    fn decDoubleFromInt32(res: *mut d64, src: int32_t) -> *mut d64;
+    fn decDoubleFromString(res: *mut d64, s: *const c_char, ctx: *mut Context) -> *mut d64;
+    fn decDoubleFromUInt32(res: *mut d64, src: uint32_t) -> *mut d64;
+    fn decDoubleToString(src: *const d64, s: *mut c_char) -> *mut c_char;
+    fn decDoubleToInt32(src: *const d64, ctx: *mut Context, round: Rounding) -> int32_t;
+    fn decDoubleToUInt32(src: *const d64, ctx: *mut Context, round: Rounding) -> uint32_t;
+    fn decDoubleToEngString(res: *const d64, s: *mut c_char) -> *mut c_char;
+    fn decDoubleZero(res: *mut d64) -> *mut d64;
     // Computational.
-    fn decQuadAbs(res: *mut d128, src: *const d128, ctx: *mut Context) -> *mut d128;
-    fn decQuadAdd(res: *mut d128, a: *const d128, b: *const d128, ctx: *mut Context) -> *mut d128;
-    fn decQuadAnd(res: *mut d128, a: *const d128, b: *const d128, ctx: *mut Context) -> *mut d128;
-    fn decQuadDivide(res: *mut d128,
-                     a: *const d128,
-                     b: *const d128,
+    fn decDoubleAbs(res: *mut d64, src: *const d64, ctx: *mut Context) -> *mut d64;
+    fn decDoubleAdd(res: *mut d64, a: *const d64, b: *const d64, ctx: *mut Context) -> *mut d64;
+    fn decDoubleAnd(res: *mut d64, a: *const d64, b: *const d64, ctx: *mut Context) -> *mut d64;
+    fn decDoubleDivide(res: *mut d64,
+                     a: *const d64,
+                     b: *const d64,
                      ctx: *mut Context)
-                     -> *mut d128;
-    fn decQuadFMA(res: *mut d128,
-                  a: *const d128,
-                  b: *const d128,
-                  c: *const d128,
+                     -> *mut d64;
+    fn decDoubleFMA(res: *mut d64,
+                  a: *const d64,
+                  b: *const d64,
+                  c: *const d64,
                   ctx: *mut Context)
-                  -> *mut d128;
-    fn decQuadInvert(res: *mut d128, src: *const d128, ctx: *mut Context) -> *mut d128;
-    fn decQuadLogB(res: *mut d128, src: *const d128, ctx: *mut Context) -> *mut d128;
-    fn decQuadMax(res: *mut d128, a: *const d128, b: *const d128, ctx: *mut Context) -> *mut d128;
-    fn decQuadMin(res: *mut d128, a: *const d128, b: *const d128, ctx: *mut Context) -> *mut d128;
-    fn decQuadMinus(res: *mut d128, src: *const d128, ctx: *mut Context) -> *mut d128;
-    fn decQuadMultiply(res: *mut d128,
-                       a: *const d128,
-                       b: *const d128,
+                  -> *mut d64;
+    fn decDoubleInvert(res: *mut d64, src: *const d64, ctx: *mut Context) -> *mut d64;
+    fn decDoubleLogB(res: *mut d64, src: *const d64, ctx: *mut Context) -> *mut d64;
+    fn decDoubleMax(res: *mut d64, a: *const d64, b: *const d64, ctx: *mut Context) -> *mut d64;
+    fn decDoubleMin(res: *mut d64, a: *const d64, b: *const d64, ctx: *mut Context) -> *mut d64;
+    fn decDoubleMinus(res: *mut d64, src: *const d64, ctx: *mut Context) -> *mut d64;
+    fn decDoubleMultiply(res: *mut d64,
+                       a: *const d64,
+                       b: *const d64,
                        ctx: *mut Context)
-                       -> *mut d128;
-    fn decQuadNextMinus(res: *mut d128, src: *const d128, ctx: *mut Context) -> *mut d128;
-    fn decQuadNextPlus(res: *mut d128, src: *const d128, ctx: *mut Context) -> *mut d128;
-    fn decQuadNextToward(res: *mut d128,
-                         src: *const d128,
-                         other: *const d128,
+                       -> *mut d64;
+    fn decDoubleNextMinus(res: *mut d64, src: *const d64, ctx: *mut Context) -> *mut d64;
+    fn decDoubleNextPlus(res: *mut d64, src: *const d64, ctx: *mut Context) -> *mut d64;
+    fn decDoubleNextToward(res: *mut d64,
+                         src: *const d64,
+                         other: *const d64,
                          ctx: *mut Context)
-                         -> *mut d128;
-    fn decQuadOr(res: *mut d128, a: *const d128, b: *const d128, ctx: *mut Context) -> *mut d128;
-    fn decQuadQuantize(res: *mut d128,
-                       a: *const d128,
-                       b: *const d128,
+                         -> *mut d64;
+    fn decDoubleOr(res: *mut d64, a: *const d64, b: *const d64, ctx: *mut Context) -> *mut d64;
+    fn decDoubleQuantize(res: *mut d64,
+                       a: *const d64,
+                       b: *const d64,
                        ctx: *mut Context)
-                       -> *mut d128;
-    fn decQuadReduce(res: *mut d128, src: *const d128, ctx: *mut Context) -> *mut d128;
-    fn decQuadRemainder(res: *mut d128,
-                        a: *const d128,
-                        b: *const d128,
+                       -> *mut d64;
+    fn decDoubleReduce(res: *mut d64, src: *const d64, ctx: *mut Context) -> *mut d64;
+    fn decDoubleRemainder(res: *mut d64,
+                        a: *const d64,
+                        b: *const d64,
                         ctx: *mut Context)
-                        -> *mut d128;
-    fn decQuadRotate(res: *mut d128,
-                     a: *const d128,
-                     b: *const d128,
+                        -> *mut d64;
+    fn decDoubleRotate(res: *mut d64,
+                     a: *const d64,
+                     b: *const d64,
                      ctx: *mut Context)
-                     -> *mut d128;
-    fn decQuadScaleB(res: *mut d128,
-                     a: *const d128,
-                     b: *const d128,
+                     -> *mut d64;
+    fn decDoubleScaleB(res: *mut d64,
+                     a: *const d64,
+                     b: *const d64,
                      ctx: *mut Context)
-                     -> *mut d128;
-    fn decQuadShift(res: *mut d128,
-                    a: *const d128,
-                    b: *const d128,
+                     -> *mut d64;
+    fn decDoubleShift(res: *mut d64,
+                    a: *const d64,
+                    b: *const d64,
                     ctx: *mut Context)
-                    -> *mut d128;
-    fn decQuadSubtract(res: *mut d128,
-                       a: *const d128,
-                       b: *const d128,
+                    -> *mut d64;
+    fn decDoubleSubtract(res: *mut d64,
+                       a: *const d64,
+                       b: *const d64,
                        ctx: *mut Context)
-                       -> *mut d128;
-    fn decQuadXor(res: *mut d128, a: *const d128, b: *const d128, ctx: *mut Context) -> *mut d128;
+                       -> *mut d64;
+    fn decDoubleXor(res: *mut d64, a: *const d64, b: *const d64, ctx: *mut Context) -> *mut d64;
     // Comparisons.
-    fn decQuadCompare(res: *mut d128,
-                      a: *const d128,
-                      b: *const d128,
+    fn decDoubleCompare(res: *mut d64,
+                      a: *const d64,
+                      b: *const d64,
                       ctx: *mut Context)
-                      -> *mut d128;
-    fn decQuadCompareTotal(res: *mut d128,
-                           a: *const d128,
-                           b: *const d128,
+                      -> *mut d64;
+    fn decDoubleCompareTotal(res: *mut d64,
+                           a: *const d64,
+                           b: *const d64,
                            ctx: *mut Context)
-                           -> *mut d128;
+                           -> *mut d64;
     // Copies.
-    fn decQuadCanonical(res: *mut d128, src: *const d128) -> *mut d128;
+    fn decDoubleCanonical(res: *mut d64, src: *const d64) -> *mut d64;
     // Non-computational.
-    fn decQuadClass(src: *const d128) -> Class;
-    fn decQuadDigits(src: *const d128) -> uint32_t;
-    fn decQuadIsCanonical(src: *const d128) -> uint32_t;
-    fn decQuadIsFinite(src: *const d128) -> uint32_t;
-    fn decQuadIsInteger(src: *const d128) -> uint32_t;
-    fn decQuadIsLogical(src: *const d128) -> uint32_t;
-    fn decQuadIsInfinite(src: *const d128) -> uint32_t;
-    fn decQuadIsNaN(src: *const d128) -> uint32_t;
-    fn decQuadIsNegative(src: *const d128) -> uint32_t;
-    fn decQuadIsNormal(src: *const d128) -> uint32_t;
-    fn decQuadIsPositive(src: *const d128) -> uint32_t;
-    fn decQuadIsSignaling(src: *const d128) -> uint32_t;
-    fn decQuadIsSigned(src: *const d128) -> uint32_t;
-    fn decQuadIsSubnormal(src: *const d128) -> uint32_t;
-    fn decQuadIsZero(src: *const d128) -> uint32_t;
+    fn decDoubleClass(src: *const d64) -> Class;
+    fn decDoubleDigits(src: *const d64) -> uint32_t;
+    fn decDoubleIsCanonical(src: *const d64) -> uint32_t;
+    fn decDoubleIsFinite(src: *const d64) -> uint32_t;
+    fn decDoubleIsInteger(src: *const d64) -> uint32_t;
+    fn decDoubleIsLogical(src: *const d64) -> uint32_t;
+    fn decDoubleIsInfinite(src: *const d64) -> uint32_t;
+    fn decDoubleIsNaN(src: *const d64) -> uint32_t;
+    fn decDoubleIsNegative(src: *const d64) -> uint32_t;
+    fn decDoubleIsNormal(src: *const d64) -> uint32_t;
+    fn decDoubleIsPositive(src: *const d64) -> uint32_t;
+    fn decDoubleIsSignaling(src: *const d64) -> uint32_t;
+    fn decDoubleIsSigned(src: *const d64) -> uint32_t;
+    fn decDoubleIsSubnormal(src: *const d64) -> uint32_t;
+    fn decDoubleIsZero(src: *const d64) -> uint32_t;
     // decNumber stuff.
-    fn decimal128FromNumber(res: *mut d128, src: *const decNumber, ctx: *mut Context) -> *mut d128;
-    fn decimal128ToNumber(src: *const d128, res: *mut decNumber) -> *mut decNumber;
+    fn decimal64FromNumber(res: *mut d64, src: *const decNumber, ctx: *mut Context) -> *mut d64;
+    fn decimal64ToNumber(src: *const d64, res: *mut decNumber) -> *mut decNumber;
     fn decNumberPower(res: *mut decNumber,
                       lhs: *const decNumber,
                       rhs: *const decNumber,
@@ -1106,98 +1106,72 @@ mod tests {
     use test::{black_box, Bencher};
 
     #[bench]
-    fn sums_vec_of_100_000_f32(b: &mut Bencher) {
-        let x = 0.00012345f32;
-        let mut xs: Vec<f32> = Vec::with_capacity(100_000);
-        for i in 0..100_000u32 {
-            xs.push(i as f32 * x);
-        }
-
-        b.iter(|| {
-            xs.iter().sum::<f32>()
-        });
-    }
-
-    #[bench]
-    fn sums_vec_of_100_000_f64(b: &mut Bencher) {
-        let x = 0.00012345f64;
-        let mut xs: Vec<f64> = Vec::with_capacity(100_000);
-        for i in 0..100_000u32 {
-            xs.push(i as f64 * x);
-        }
-
-        b.iter(|| {
-            xs.iter().sum::<f64>()
-        });
-    }
-
-    #[bench]
     fn sums_vec_of_100_000(b: &mut Bencher) {
-        let x = d128!(0.00012345);
-        let mut xs: Vec<d128> = Vec::with_capacity(100_000);
+        let x = d64!(0.00012345);
+        let mut xs: Vec<d64> = Vec::with_capacity(100_000);
         for i in 0..100_000u32 {
-            xs.push(d128::from(i) * x);
+            xs.push(d64::from(i) * x);
         }
 
         b.iter(|| {
-            xs.iter().sum::<d128>()
+            xs.iter().sum::<d64>()
         });
     }
 
     #[test]
     fn it_parses_zero_in_exp_notation() {
-        assert_eq!(d128::from_str("0E-8").unwrap(), d128!(0.00000000));
+        assert_eq!(d64::from_str("0E-8").unwrap(), d64!(0.00000000));
     }
 
     #[test]
     fn it_verifies_infinity_fns() {
-        assert!(d128::infinity().is_infinite());
-        assert!(!d128::infinity().is_negative());
-        assert!(d128::neg_infinity().is_infinite());
-        assert!(d128::neg_infinity().is_negative());
-        assert_eq!(d128::infinity() + d128!(1), d128::infinity());
+        assert!(d64::infinity().is_infinite());
+        assert!(!d64::infinity().is_negative());
+        assert!(d64::neg_infinity().is_infinite());
+        assert!(d64::neg_infinity().is_negative());
+        assert_eq!(d64::infinity() + d64!(1), d64::infinity());
     }
 
     #[test]
     fn test_sum_impl() {
-        let decimals = vec![d128!(1), d128!(2), d128!(3), d128!(4)];
-        assert_eq!(d128!(10), decimals.iter().sum());
-        assert_eq!(d128!(10), decimals.into_iter().sum());
+        let decimals = vec![d64!(1), d64!(2), d64!(3), d64!(4)];
+        assert_eq!(d64!(10), decimals.iter().sum());
+        assert_eq!(d64!(10), decimals.into_iter().sum());
     }
 
     #[test]
     fn it_checks_default_is_zero() {
-        assert_eq!(d128::default(), d128::zero());
+        assert_eq!(d64::default(), d64::zero());
     }
 
     #[test]
     fn it_handles_a_real_world_small_number_that_landed_in_db_as_nan() {
-        let amt = d128!(1E-8);
-        let price = d128!(0.00143500);
-        let fee = d128!(1E-8);
-        let total = d128!(0E-8);
-        assert_eq!(d128::zero(), total);
-        let as_calculated = (d128!(1) - fee / total).quantize(d128!(0.00000001));
+        let amt = d64!(1E-8);
+        let price = d64!(0.00143500);
+        let fee = d64!(1E-8);
+        let total = d64!(0E-8);
+        assert_eq!(d64::zero(), total);
+        let as_calculated = (d64!(1) - fee / total).quantize(d64!(0.00000001));
         assert!(as_calculated.is_nan());
-        let fixed = (d128!(1) - fee / total.max(d128!(0.00000001))).quantize(d128!(0.00000001));
+        let fixed = (d64!(1) - fee / total.max(d64!(0.00000001))).quantize(d64!(0.00000001));
         assert!(fixed.is_finite());
     }
 
     #[test]
     fn it_checks_the_max_of_nan_and_a_real_number_is_the_real_number() {
-        let x = d128!(NaN);
+        let x = d64!(NaN);
         assert!(x.is_nan());
-        assert_eq!(x.max(d128::zero()), d128::zero());
-        assert_eq!(x.max(d128!(-100)), d128!(-100));
+        assert_eq!(x.max(d64::zero()), d64::zero());
+        assert_eq!(x.max(d64!(-100)), d64!(-100));
     }
 
     #[bench]
     fn random_number_via_u32_range(b: &mut Bencher) {
         let mut rng = rand::thread_rng();
         let range = Range::new(980_000_000u32, 1_200_000_000u32);
-        let e = d128!(1_000_000_000);
+        let e = d64!(1_000_000_000);
         b.iter(|| {
-            let d: d128 = d128::from(range.ind_sample(&mut rng)) / e;
+            let d: d64 = d64::from(range.ind_sample(&mut rng)) / e;
             d
         });
     }
@@ -1206,92 +1180,92 @@ mod tests {
     fn it_validates_range_of_random_number_via_u32_range() {
         let mut rng = rand::thread_rng();
         let range = Range::new(980_000_000u32, 1_200_000_000u32);
-        let e = d128!(1_000_000_000);
-        let d: d128 = d128::from(range.ind_sample(&mut rng)) / e;
+        let e = d64!(1_000_000_000);
+        let d: d64 = d64::from(range.ind_sample(&mut rng)) / e;
         println!("d={}", d);
-        assert!(d >= d128!(0.98));
-        assert!(d <= d128!(1.2));
+        assert!(d >= d64!(0.98));
+        assert!(d <= d64!(1.2));
     }
 
     #[bench]
     fn random_number_via_u32(b: &mut Bencher) {
         let mut rng = rand::thread_rng();
         b.iter(|| {
-            let d: d128 = rng.gen::<u32>().into();
+            let d: d64 = rng.gen::<u32>().into();
             d
         });
     }
 
-    #[bench]
-    fn random_number_via_u64(b: &mut Bencher) {
-        let mut rng = rand::thread_rng();
-        b.iter(|| {
-            let d: d128 = rng.gen::<u64>().into();
-            d
-        });
-    }
+    // #[bench]
+    // fn random_number_via_u32(b: &mut Bencher) {
+    //     let mut rng = rand::thread_rng();
+    //     b.iter(|| {
+    //         let d: d64 = rng.gen::<u32>().into();
+    //         d
+    //     });
+    // }
 
     #[test]
     fn test_deref_does_not_blow_the_machine_up() {
-        fn add(a: &d128, b: &d128) -> d128 {
+        fn add(a: &d64, b: &d64) -> d64 {
             *a + *b
         }
-        let a = d128!(1);
-        let b = d128!(1);
+        let a = d64!(1);
+        let b = d64!(1);
         let c = add(&a, &b);
-        assert_eq!(c, d128!(2));
+        assert_eq!(c, d64!(2));
     }
 
     #[test]
     fn test_deref_mutate() {
-        let a = &mut d128!(1.011);
-        *a += d128!(1.022);
-        assert_eq!(a, &d128!(2.033));
+        let a = &mut d64!(1.011);
+        *a += d64!(1.022);
+        assert_eq!(a, &d64!(2.033));
     }
 
     #[test]
     fn default() {
-        assert_eq!(d128::zero(), d128::default());
-        assert_eq!(d128::zero(), Default::default());
+        assert_eq!(d64::zero(), d64::default());
+        assert_eq!(d64::zero(), Default::default());
     }
 
     #[test]
     fn special() {
-        assert!(d128::infinity().is_infinite());
-        assert!(!d128::infinity().is_negative());
+        assert!(d64::infinity().is_infinite());
+        assert!(!d64::infinity().is_negative());
 
-        assert!(d128::neg_infinity().is_infinite());
-        assert!(d128::neg_infinity().is_negative());
+        assert!(d64::neg_infinity().is_infinite());
+        assert!(d64::neg_infinity().is_negative());
 
-        assert_eq!(d128::infinity() + d128!(1), d128::infinity());
+        assert_eq!(d64::infinity() + d64!(1), d64::infinity());
     }
 
     #[cfg(feature = "ord_subset")]
     #[test]
     #[should_panic]
     fn test_ord_subset_nan() {
-        ord_subset::OrdVar::new(d128!(NaN));
+        ord_subset::OrdVar::new(d64!(NaN));
     }
 
     #[cfg(feature = "ord_subset")]
     #[test]
     #[should_panic]
     fn test_ord_subset_qnan() {
-        ord_subset::OrdVar::new(d128!(qNaN));
+        ord_subset::OrdVar::new(d64!(qNaN));
     }
 
     #[cfg(feature = "ord_subset")]
     #[test]
     fn test_ord_subset_zero() {
-        assert_eq!(*ord_subset::OrdVar::new(d128::zero()), d128::zero());
+        assert_eq!(*ord_subset::OrdVar::new(d64::zero()), d64::zero());
     }
 
     #[cfg(feature = "ord_subset")]
     #[test]
     fn test_into_for_btreemap() {
-        let mut m = BTreeMap::<ord_subset::OrdVar<d128>, i64>::new();
-        m.insert(d128!(1.1).into(), 1);
-        assert_eq!(m[&d128!(1.1).into()], 1);
+        let mut m = BTreeMap::<ord_subset::OrdVar<d64>, i64>::new();
+        m.insert(d64!(1.1).into(), 1);
+        assert_eq!(m[&d64!(1.1).into()], 1);
     }
 
     #[cfg(feature = "rustc-serialize")]
@@ -1299,9 +1273,9 @@ mod tests {
     fn test_rustc_serialize() {
         #[derive(RustcDecodable, RustcEncodable, PartialEq, Debug)]
         struct Test {
-            price: d128,
+            price: d64,
         };
-        let a = Test { price: d128!(12.3456) };
+        let a = Test { price: d64!(12.3456) };
         assert_eq!(json::encode(&a).unwrap(), "{\"price\":\"12.3456\"}");
         let b = json::decode("{\"price\":\"12.3456\"}").unwrap();
         assert_eq!(a, b);
@@ -1311,8 +1285,8 @@ mod tests {
     #[test]
     fn test_serde() {
         let mut a = BTreeMap::new();
-        a.insert("price".to_string(), d128!(432.232));
-        a.insert("amt".to_string(), d128!(9.9));
+        a.insert("price".to_string(), d64!(432.232));
+        a.insert("amt".to_string(), d64!(9.9));
         assert_eq!(&to_string(&a).unwrap(),
             "{\"amt\":\"9.9\",\"price\":\"432.232\"}");
         let b = from_str("{\"price\":\"432.232\",\"amt\":\"9.9\"}").unwrap();
@@ -1321,67 +1295,67 @@ mod tests {
 
     #[test]
     fn unary_op() {
-        assert_eq!(d128!(-1.1), -d128!(1.1));
-        assert_eq!(d128!(-1.1), -&d128!(1.1));
+        assert_eq!(d64!(-1.1), -d64!(1.1));
+        assert_eq!(d64!(-1.1), -&d64!(1.1));
     }
 
     #[test]
     fn binary_op() {
-        assert_eq!(d128!(3.33), d128!(1.11) + d128!(2.22));
-        assert_eq!(d128!(3.33), &d128!(1.11) + d128!(2.22));
-        assert_eq!(d128!(3.33), d128!(1.11) + &d128!(2.22));
-        assert_eq!(d128!(3.33), &d128!(1.11) + &d128!(2.22));
-        assert_eq!(d128!(5) << 2, d128!(500));
-        assert_eq!(d128!(500) >> 1, d128!(50));
+        assert_eq!(d64!(3.33), d64!(1.11) + d64!(2.22));
+        assert_eq!(d64!(3.33), &d64!(1.11) + d64!(2.22));
+        assert_eq!(d64!(3.33), d64!(1.11) + &d64!(2.22));
+        assert_eq!(d64!(3.33), &d64!(1.11) + &d64!(2.22));
+        assert_eq!(d64!(5) << 2, d64!(500));
+        assert_eq!(d64!(500) >> 1, d64!(50));
     }
 
     #[test]
     fn assign_op() {
-        let mut x = d128!(1);
-        x += d128!(2);
-        assert_eq!(x, d128!(3));
-        x *= d128!(3);
-        assert_eq!(x, d128!(9));
-        x -= d128!(1);
-        assert_eq!(x, d128!(8));
-        x /= d128!(16);
-        assert_eq!(x, d128!(0.5));
+        let mut x = d64!(1);
+        x += d64!(2);
+        assert_eq!(x, d64!(3));
+        x *= d64!(3);
+        assert_eq!(x, d64!(9));
+        x -= d64!(1);
+        assert_eq!(x, d64!(8));
+        x /= d64!(16);
+        assert_eq!(x, d64!(0.5));
         x <<= 2;
-        assert_eq!(x, d128!(50));
+        assert_eq!(x, d64!(50));
         x >>= 1;
-        assert_eq!(x, d128!(5));
+        assert_eq!(x, d64!(5));
     }
 
     #[test]
     fn as_ref_operand() {
-        assert_eq!(d128!(1.1), d128!(1.1).min(d128!(2.2)));
-        assert_eq!(d128!(1.1), d128!(1.1).min(&d128!(2.2)));
+        assert_eq!(d64!(1.1), d64!(1.1).min(d64!(2.2)));
+        assert_eq!(d64!(1.1), d64!(1.1).min(&d64!(2.2)));
     }
 
-    #[test]
-    fn from_i64() {
-        assert_eq!(d128::from_str(&::std::i64::MAX.to_string()).unwrap(),
-                   d128::from(::std::i64::MAX));
-        assert_eq!(d128::from(0i32), d128::from(0i64));
-        assert_eq!(d128::from_str(&(::std::i64::MIN).to_string()).unwrap(),
-                   d128::from(::std::i64::MIN));
-    }
+    // #[test]
+    // fn from_i64() {
+    //     assert_eq!(d64::from_str(&::std::i64::MAX.to_string()).unwrap(),
+    //                d64::from(::std::i64::MAX));
+    //     assert_eq!(d64::from(0i32), d64::from(0i64));
+    //     assert_eq!(d64::from_str(&(::std::i64::MIN).to_string()).unwrap(),
+    //                d64::from(::std::i64::MIN));
+    // }
 
-    #[test]
-    fn from_u64() {
-        assert_eq!(d128::from_str(&::std::u64::MAX.to_string()).unwrap(),
-                   d128::from(::std::u64::MAX));
-        assert_eq!(d128::from(0i32), d128::from(0u64));
-        assert_eq!(d128::from_str(&(::std::u64::MIN).to_string()).unwrap(),
-                   d128::from(::std::u64::MIN));
-    }
+    // #[test]
+    // fn from_u64() {
+    //     assert_eq!(d64::from_str(&::std::u64::MAX.to_string()).unwrap(),
+    //                d64::from(::std::u64::MAX));
+    //     assert_eq!(d64::from(0i32), d64::from(0u64));
+    //     assert_eq!(d64::from_str(&(::std::u64::MIN).to_string()).unwrap(),
+    //                d64::from(::std::u64::MIN));
+    // }
 
     #[test]
     fn test_sum() {
-        let decimals = vec![d128!(1), d128!(2), d128!(3), d128!(4)];
+        let decimals = vec![d64!(1), d64!(2), d64!(3), d64!(4)];
 
-        assert_eq!(d128!(10), decimals.iter().sum());
+        assert_eq!(d64!(10), decimals.iter().sum());
 
-        assert_eq!(d128!(10), decimals.into_iter().sum());
+        assert_eq!(d64!(10), decimals.into_iter().sum());
     }
 }
