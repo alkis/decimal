@@ -62,9 +62,9 @@ impl ord_subset::OrdSubset for d128 {
 }
 
 #[cfg(feature = "ord_subset")]
-impl Into<ord_subset::OrdVar<d128>> for d128 {
-    fn into(self) -> ord_subset::OrdVar<d128> {
-        ord_subset::OrdVar::new(self)
+impl From<d128> for ord_subset::OrdVar<d128> {
+    fn from(val: d128) -> ord_subset::OrdVar<d128> {
+        ord_subset::OrdVar::new(val)
     }
 }
 
@@ -215,16 +215,16 @@ impl FromStr for d128 {
 }
 
 /// Converts this d128 to an i32. It uses Rounding::HalfEven.
-impl Into<i32> for d128 {
-    fn into(self) -> i32 {
-        d128::with_context(|ctx| unsafe { decQuadToInt32(&self, ctx, ctx.rounding) })
+impl From<d128> for i32 {
+    fn from(val: d128) -> i32 {
+        d128::with_context(|ctx| unsafe { decQuadToInt32(&val, ctx, ctx.rounding) })
     }
 }
 
 /// Converts this d128 to an u32. It uses Rounding::HalfEven.
-impl Into<u32> for d128 {
-    fn into(self) -> u32 {
-        d128::with_context(|ctx| unsafe { decQuadToUInt32(&self, ctx, ctx.rounding) })
+impl From<d128> for u32 {
+    fn from(val: d128) -> u32 {
+        d128::with_context(|ctx| unsafe { decQuadToUInt32(&val, ctx, ctx.rounding) })
     }
 }
 
