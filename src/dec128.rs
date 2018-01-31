@@ -168,12 +168,12 @@ impl From<d128> for u64 {
             let _ = decQuadToBCD(&val, &mut exp, &mut bcd);
             //debug_assert_eq!(i, 0);
         }
-        let mut u: u64 = 0;
+        let mut u: u128 = 0;
         let mut i: usize = 33;
         let n: usize = val.digits() as usize;
-        assert!(n < 21);
+        //assert!(n < 21, "val.digits() = {} (> 21); val = {}", n, val);
         while i > 33 - n {
-            u += bcd[i] as u64 * 10u64.pow((33 - i) as u32);
+            u += bcd[i] as u128 * 10u128.pow((33 - i) as u32);
             i -= 1;
         }
         // for (i, b) in bcd.iter().rev().enumerate().take(val.digits() as usize) {
@@ -181,11 +181,11 @@ impl From<d128> for u64 {
         // }
         //println!("exp = {}", exp);
         match exp {
-            e if e > 0 => u * 10u64.pow(exp as u32),
+            e if e > 0 => (u * 10u128.pow(exp as u32)) as u64,
 
-            e if e < 0 => u / 10u64.pow(exp.abs() as u32),
+            e if e < 0 => (u / 10u128.pow(exp.abs() as u32)) as u64,
 
-            _ => u
+            _ => u as u64
         }
         // if exp > 0 {
         //     u *= 10u64.pow(exp as u32);
@@ -212,6 +212,57 @@ impl From<u64> for d128 {
             val /= 10;
             i -= 1;
         }
+        unsafe {
+            let mut res: d128 = uninitialized();
+            *decQuadFromBCD(&mut res, 0, bcd.as_ptr(), 0)
+        }
+    }
+}
+
+/// Converts an u128 to d128. The result is exact and no error is possible.
+///
+/// # Examples
+/// ```
+/// #![feature(i128, i128_type)]
+/// #[macro_use]
+/// extern crate decimal;
+///
+/// use decimal::d128;
+///
+/// fn main() {
+///     let a: u128 = 12345;
+///     assert_eq!(d128::from(a), d128!(12345));
+///
+///     let b: u128 = 340282366920938463463374607431768211455;
+///     assert_eq!(d128::from(b), d128!(340282366920938463463374607431768211455));
+///
+///     let c: u128 = 999_999_999_999_999_999_999_999_999_999_999;
+///     assert_eq!(d128::from(c), d128!(999999999999999999999999999999999));
+///
+///     let d: u128 = 9_999_999_999_999_999_999_999_999_999_999_999;
+///     assert_eq!(d128::from(d), d128!(9999999999999999999999999999999999));
+///
+///     let e: u128 = 98_999_999_999_999_999_999_999_999_999_999_999;
+///     assert_eq!(d128::from(e), d128!(98999999999999999999999999999999999));
+///
+///     let f: u128 = 10_000_000_000_000_000_000_000_000_000_000_000;
+///     assert_eq!(d128::from(f), d128!(10000000000000000000000000000000000));
+/// }
+/// ```
+impl From<u128> for d128 {
+    fn from(mut val: u128) -> d128 {
+        if val > 9_999_999_999_999_999_999_999_999_999_999_999 { // max value w/ 34 digits
+            return d128::from_str(&format!("{}", val)).unwrap()
+        }
+
+        let mut bcd = [0; 34];
+        let mut i = 0;
+        while val > 0 && i < 34 {
+            bcd[33 - i] = (val % 10) as u8;
+            val /= 10;
+            i += 1;
+        }
+
         unsafe {
             let mut res: d128 = uninitialized();
             *decQuadFromBCD(&mut res, 0, bcd.as_ptr(), 0)
@@ -1173,6 +1224,13 @@ mod tests {
     #[allow(unused_imports)]
     use test::{black_box, Bencher};
 
+    #[test]
+    fn checks_a_u64_conversion_that_failed_somehow() {
+        let e: d128 = d128!(100000000);
+        let x = d128!(10135);
+        assert_eq!(u64::from(e * x), 1013500000000);
+        assert_eq!(u64::from(x * e), 1013500000000);
+    }
 
     #[test]
     fn checks_a_u64_potential_edge_case() {

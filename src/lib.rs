@@ -1,4 +1,4 @@
-#![feature(const_fn, test)]
+#![feature(const_fn, test, i128_type)]
 
 #[macro_use]
 extern crate bitflags;
