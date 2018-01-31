@@ -179,7 +179,21 @@ impl From<d128> for u64 {
         // for (i, b) in bcd.iter().rev().enumerate().take(val.digits() as usize) {
         //     u += (*b as u64) * 10u64.pow(i as u32);
         // }
-        u
+        //println!("exp = {}", exp);
+        match exp {
+            e if e > 0 => u * 10u64.pow(exp as u32),
+
+            e if e < 0 => u / 10u64.pow(exp.abs() as u32),
+
+            _ => u
+        }
+        // if exp > 0 {
+        //     u *= 10u64.pow(exp as u32);
+        // } else if exp < 0 {
+        //     u /= 10u64.pow(exp.abs() as u32)
+        // }
+        // u
+        //(u * exp as i64) as u64
         // bcd.iter()
         //     .rev()
         //     .enumerate()
@@ -1159,11 +1173,24 @@ mod tests {
     #[allow(unused_imports)]
     use test::{black_box, Bencher};
 
+
+    #[test]
+    fn checks_a_u64_potential_edge_case() {
+        let e: d128 = d128!(100000000);
+        //let e = d128!(1e8);
+        //assert_eq!(e, E);
+        let x = d128!(0.12345678);
+        assert_eq!(u64::from(e * x), 12345678u64);
+        //assert_eq!(u64::from(E * x), 12345678u64);
+        assert_eq!(u64::from(x * e), 12345678u64);
+    }
+
     #[test]
     fn verifies_u64_from_d128_on_large_number_of_examples() {
         macro_rules! check {
             ($n:expr) => {
-                assert_eq!(u64::from(d128!($n)), $n);
+                let u: u64 = $n;
+                assert_eq!(u64::from(d128!($n)), u);
             }
         }
 
@@ -1175,6 +1202,7 @@ mod tests {
         check!(10);
         check!(100);
         check!(1456789);
+        check!(12345678);
         check!(123456789);
         check!(17473551615);
         check!(1744073551615);
