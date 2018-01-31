@@ -147,6 +147,47 @@ impl From<u32> for d128 {
     }
 }
 
+/// # Examples
+/// ```
+/// #[macro_use]
+/// extern crate decimal;
+///
+/// fn main() {
+///     let x = d128!(12345);
+///     assert_eq!(u64::from(x), 12345u64);
+/// }
+/// ```
+impl From<d128> for u64 {
+    #[inline]
+    fn from(val: d128) -> u64 {
+        debug_assert!(val >= d128::zero());
+        //let mut bcd = [0; 34];
+        let mut bcd: [u8; 34] = unsafe { uninitialized() };
+        let mut exp: i32 = unsafe { uninitialized() };
+        unsafe {
+            let _ = decQuadToBCD(&val, &mut exp, &mut bcd);
+            //debug_assert_eq!(i, 0);
+        }
+        let mut u: u64 = 0;
+        let mut i: usize = 33;
+        let n: usize = val.digits() as usize;
+        assert!(n < 21);
+        while i > 33 - n {
+            u += bcd[i] as u64 * 10u64.pow((33 - i) as u32);
+            i -= 1;
+        }
+        // for (i, b) in bcd.iter().rev().enumerate().take(val.digits() as usize) {
+        //     u += (*b as u64) * 10u64.pow(i as u32);
+        // }
+        u
+        // bcd.iter()
+        //     .rev()
+        //     .enumerate()
+        //     .take(val.digits() as usize)
+        //     .fold(0, |acc, (i, x)| acc + (*x as u64 ) * 10u64.pow(i as u32))
+    }
+}
+
 /// Converts an u64 to d128. The result is exact and no error is possible.
 impl From<u64> for d128 {
     fn from(mut val: u64) -> d128 {
@@ -799,6 +840,18 @@ impl d128 {
     /// finite integer (with exponent=0) in the range -34 through +34. NaNs are propagated as
     /// usual. If `self` is infinite the result is Infinity of the same sign. No status is set
     /// unless `amount` is invalid or an operand is an sNaN.
+    ///
+    /// # Examples
+    /// ```
+    /// #[macro_use]
+    /// extern crate decimal;
+    ///
+    /// fn main() {
+    ///     let x = d128!(1.2345);
+    ///     let one = d128!(1);
+    ///     assert_eq!(x.rotate(one), d128!(12.345));
+    /// }
+    /// ```
     pub fn rotate<O: AsRef<d128>>(mut self, amount: O) -> d128 {
         d128::with_context(|ctx| unsafe { *decQuadRotate(&mut self, &self, amount.as_ref(), ctx) })
     }
@@ -958,6 +1011,7 @@ extern "C" {
     fn decContextSetRounding(ctx: *mut Context, rounding: uint32_t);
     // Utilities and conversions, extractors, etc.
     fn decQuadFromBCD(res: *mut d128, exp: i32, bcd: *const u8, sign: i32) -> *mut d128;
+    fn decQuadToBCD(res: *const d128, exp: &mut i32, bcd: &mut [u8; 34]) -> int32_t;
     fn decQuadFromInt32(res: *mut d128, src: int32_t) -> *mut d128;
     fn decQuadFromString(res: *mut d128, s: *const c_char, ctx: *mut Context) -> *mut d128;
     fn decQuadFromUInt32(res: *mut d128, src: uint32_t) -> *mut d128;
@@ -1104,6 +1158,29 @@ mod tests {
 
     #[allow(unused_imports)]
     use test::{black_box, Bencher};
+
+    #[test]
+    fn verifies_u64_from_d128_on_large_number_of_examples() {
+        macro_rules! check {
+            ($n:expr) => {
+                assert_eq!(u64::from(d128!($n)), $n);
+            }
+        }
+
+        check!(0);
+        check!(1);
+        check!(2);
+        check!(3);
+        check!(4);
+        check!(10);
+        check!(100);
+        check!(1456789);
+        check!(123456789);
+        check!(17473551615);
+        check!(1744073551615);
+        check!(1744073709551615);
+        check!(18446744073709551615);
+    }
 
     #[bench]
     fn sums_vec_of_100_000_u64_1e8_of_float(b: &mut Bencher) {
