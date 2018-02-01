@@ -957,7 +957,7 @@ extern "C" {
     fn decContextDefault(ctx: *mut Context, kind: uint32_t) -> *mut Context;
     fn decContextSetRounding(ctx: *mut Context, rounding: uint32_t);
     // Utilities and conversions, extractors, etc.
-    fn decDoubleFromBCD(res: *mut d64, exp: i32, bcd: *const u8, sign: i32) -> *mut d64;
+    // fn decDoubleFromBCD(res: *mut d64, exp: i32, bcd: *const u8, sign: i32) -> *mut d64;
     fn decDoubleFromInt32(res: *mut d64, src: int32_t) -> *mut d64;
     fn decDoubleFromString(res: *mut d64, s: *const c_char, ctx: *mut Context) -> *mut d64;
     fn decDoubleFromUInt32(res: *mut d64, src: uint32_t) -> *mut d64;

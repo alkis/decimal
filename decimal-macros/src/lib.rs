@@ -8,6 +8,7 @@ extern crate syntax;
 
 use rustc_plugin::Registry;
 use syntax::ext::base::{DummyResult, MacEager, ExtCtxt, MacResult};
+#[allow(unused_imports)]
 use syntax::ext::build::AstBuilder;
 use syntax::ext::source_util;
 use syntax::codemap::Span;
