@@ -15,6 +15,8 @@ to allow ergonomic use of this type.
 
 To emulate literals a macro is used `d128!`.
 
+[Documentation](https://docs.rs/decimal)
+
 # Example
 
 ```rust
