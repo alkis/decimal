@@ -18,6 +18,8 @@ extern crate rand;
 extern crate test;
 #[cfg(feature = "simd-benchmarks")]
 extern crate faster;
+#[cfg(feature = "slog")]
+extern crate slog;
 
 #[macro_export]
 /// A macro to construct d128 literals.

@@ -10,6 +10,8 @@ use ord_subset;
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 #[cfg(feature = "serde")]
 use serde;
+#[cfg(feature = "slog")]
+use slog;
 use std::borrow::Borrow;
 use std::cell::RefCell;
 use std::default::Default;
@@ -952,6 +954,18 @@ impl d64 {
     }
 }
 
+#[cfg(feature = "slog")]
+impl slog::Value for d64 {
+    fn serialize(
+        &self,
+        _record: &slog::Record,
+        key: slog::Key,
+        serializer: &mut slog::Serializer,
+    ) -> Result<(), slog::Error> {
+        serializer.emit_arguments(key, &format_args!("{}", self))
+    }
+}
+
 extern "C" {
     // Context.
     fn decContextDefault(ctx: *mut Context, kind: uint32_t) -> *mut Context;
@@ -1083,6 +1097,7 @@ extern "C" {
                       -> *mut decNumber;
 }
 
+#[allow(unused)]
 #[cfg(test)]
 mod tests {
     #[cfg(any(feature = "ord_subset", feature = "rustc-serialize"))]
