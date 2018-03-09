@@ -26,6 +26,7 @@ use std::ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Div, DivAssign, R
                ShlAssign, Shr, ShrAssign, Deref};
 use std::str::FromStr;
 use std::str::from_utf8_unchecked;
+use d128;
 
 thread_local!(static CTX: RefCell<Context> = RefCell::new(d64::default_context()));
 thread_local!(static ROUND_DOWN: RefCell<Context> = RefCell::new(d64::with_rounding(Rounding::Down)));
@@ -966,6 +967,15 @@ impl slog::Value for d64 {
     }
 }
 
+impl From<d128> for d64 {
+    fn from(val: d128) -> Self {
+        d64::with_context(|ctx| unsafe {
+            let mut res: d64 = uninitialized();
+            *decDoubleFromWider(&mut res, &val, ctx)
+        })
+    }
+}
+
 extern "C" {
     // Context.
     fn decContextDefault(ctx: *mut Context, kind: uint32_t) -> *mut Context;
@@ -978,6 +988,7 @@ extern "C" {
     fn decDoubleToString(src: *const d64, s: *mut c_char) -> *mut c_char;
     fn decDoubleToInt32(src: *const d64, ctx: *mut Context, round: Rounding) -> int32_t;
     fn decDoubleToUInt32(src: *const d64, ctx: *mut Context, round: Rounding) -> uint32_t;
+    fn decDoubleFromWider(res: *mut d64, src: *const d128, ctx: *mut Context) -> *mut d64;
     fn decDoubleToEngString(res: *const d64, s: *mut c_char) -> *mut c_char;
     fn decDoubleZero(res: *mut d64) -> *mut d64;
     // Computational.
@@ -1119,6 +1130,12 @@ mod tests {
 
     #[allow(unused_imports)]
     use test::{black_box, Bencher};
+
+    #[test]
+    fn from_d128() {
+        assert_eq!(d64::from(d128!(1)), d64!(1));
+        assert_eq!(d64::from(d128!(1.23456)), d64!(1.23456));
+    }
 
     #[bench]
     fn sums_vec_of_100_000(b: &mut Bencher) {
