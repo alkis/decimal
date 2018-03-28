@@ -20,6 +20,9 @@ extern crate test;
 extern crate faster;
 #[cfg(feature = "slog")]
 extern crate slog;
+#[cfg(test)]
+#[macro_use]
+extern crate approx;
 
 #[macro_export]
 /// A macro to construct d128 literals.

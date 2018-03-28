@@ -131,6 +131,7 @@ impl<'de> serde::de::Visitor<'de> for d128Visitor {
 
 /// Converts an i32 to d128. The result is exact and no error is possible.
 impl From<i32> for d128 {
+    #[inline]
     fn from(val: i32) -> d128 {
         unsafe {
             let mut res: d128 = uninitialized();
@@ -146,6 +147,24 @@ impl From<u32> for d128 {
             let mut res: d128 = uninitialized();
             *decQuadFromUInt32(&mut res, val)
         }
+    }
+}
+
+impl From<d128> for f64 {
+    #[inline]
+    fn from(x: d128) -> Self {
+        f64::from_str(&(format!("{}", x))).expect("f64::from_str conversion from d128")
+    }
+}
+
+impl From<d128> for f32 {
+    #[inline]
+    fn from(x: d128) -> Self {
+        //f32::from_str(&(format!("{}", x))).expect("f32::from_str conversion from d128")
+
+        // for whatever reason, the f32::from_str is slow
+        f64::from_str(&(format!("{}", x))).expect("f64::from_str conversion from d128")
+            as f32
     }
 }
 
@@ -1238,6 +1257,46 @@ mod tests {
 
     #[allow(unused_imports)]
     use test::{black_box, Bencher};
+
+    #[test]
+    fn test_d128_to_f64_approx() {
+        let a = 1.23456789f64;
+        assert_relative_eq!(a, f64::from(d128!(1.23456789)), epsilon = 1e-6f64);
+        let a = 4000.2340293842;
+        assert_relative_eq!(a, f64::from(d128!(4000.2340293842)), epsilon = 1e-6f64);
+    }
+
+    #[test]
+    fn test_d128_to_f32_approx() {
+        let a = 1.23456789f32;
+        assert_relative_eq!(a, f32::from(d128!(1.23456789)), epsilon = 1e-6f32);
+        let a = 4000.2340293842;
+        assert_relative_eq!(a, f32::from(d128!(4000.2340293842)), epsilon = 1e-6f32);
+    }
+
+    #[bench]
+    fn bench_d128_to_f64_small(b: &mut Bencher) {
+        let x = d128!(1.23456789);
+        b.iter(|| f64::from(x));
+    }
+
+    #[bench]
+    fn bench_d128_to_f64_larger(b: &mut Bencher) {
+        let x = d128!(4000.2340293842);
+        b.iter(|| f64::from(x));
+    }
+
+    #[bench]
+    fn bench_d128_to_f32_small(b: &mut Bencher) {
+        let x = d128!(1.23456789);
+        b.iter(|| f32::from(x));
+    }
+
+    #[bench]
+    fn bench_d128_to_f32_larger(b: &mut Bencher) {
+        let x = d128!(4000.2340293842);
+        b.iter(|| f32::from(x));
+    }
 
     #[test]
     fn checks_a_u64_conversion_that_failed_somehow() {
