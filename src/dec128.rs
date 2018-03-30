@@ -26,6 +26,7 @@ use std::ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Div, DivAssign, R
                ShlAssign, Shr, ShrAssign, Deref};
 use std::str::FromStr;
 use std::str::from_utf8_unchecked;
+use std::{f32, f64};
 
 thread_local!(static CTX: RefCell<Context> = RefCell::new(d128::default_context()));
 thread_local!(static ROUND_DOWN: RefCell<Context> = RefCell::new(d128::with_rounding(Rounding::Down)));
@@ -153,18 +154,43 @@ impl From<u32> for d128 {
 impl From<d128> for f64 {
     #[inline]
     fn from(x: d128) -> Self {
-        f64::from_str(&(format!("{}", x))).expect("f64::from_str conversion from d128")
+        if !x.is_finite() {
+            if x.is_infinite() {
+                if x > d128::zero() {
+                    f64::INFINITY
+                } else {
+                    f64::NEG_INFINITY
+                }
+            } else {
+                f64::NAN
+            }
+        } else {
+            f64::from_str(&(format!("{}", x)))
+                .unwrap_or(f64::NAN)
+        }
     }
 }
 
 impl From<d128> for f32 {
     #[inline]
     fn from(x: d128) -> Self {
-        //f32::from_str(&(format!("{}", x))).expect("f32::from_str conversion from d128")
-
-        // for whatever reason, the f32::from_str is slow
-        f64::from_str(&(format!("{}", x))).expect("f64::from_str conversion from d128")
-            as f32
+        if !x.is_finite() {
+            if x.is_infinite() {
+                if x > d128::zero() {
+                    f32::INFINITY
+                } else {
+                    f32::NEG_INFINITY
+                }
+            } else {
+                f32::NAN
+            }
+        } else {
+            // for whatever reason, the f32::from_str is slow
+            f64::from_str(&(format!("{}", x)))
+                //.expect(&format!("f64::from_str conversion from d128: {}", x))
+                .unwrap_or(f64::NAN)
+                as f32
+        }
     }
 }
 
@@ -658,7 +684,7 @@ impl d128 {
     {
         CTX.with(|ctx| f(&mut ctx.borrow_mut()))
     }
-    
+
     /// Creates a d128 from raw bytes. Endianess is host dependent.
     pub const fn from_raw_bytes(bytes: [u8; 16]) -> d128 {
         d128 { bytes }
@@ -1257,6 +1283,15 @@ mod tests {
 
     #[allow(unused_imports)]
     use test::{black_box, Bencher};
+
+    #[test]
+    fn d128_to_f32_fuzz() {
+        assert!(f32::from(d128!(NaN)).is_nan());
+        assert!(d128!(Inf).is_infinite());
+        assert!(d128!(Inf) > d128::zero());
+        let inf = f32::from(d128!(Inf));
+        assert!(inf.is_infinite(), "expected inf, val: {}", inf);
+    }
 
     #[test]
     fn test_d128_to_f64_approx() {
