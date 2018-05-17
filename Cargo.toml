@@ -8,6 +8,7 @@ repository = "https://github.com/alkis/decimal"
 documentation = "https://alkis.github.io/decimal"
 keywords = ["decimal", "decNumber"]
 license = "Apache-2.0"
+autobins = false
 
 [lib]
 name = "decimal"
