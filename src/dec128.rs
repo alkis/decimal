@@ -695,6 +695,26 @@ impl d128 {
         self.bytes
     }
 
+    /// Multiplies `x` by `1e8`, truncates to integer, converts to `d128`, then
+    /// scales back down. Benches at ~200ns. A bit faster than using `FromStr`
+    /// at the cost of precision. Precision loss is much worse for larger numbers.
+    /// For the range `(-1000, 1000)` this approach is tested to return within
+    /// `1e-4` of the original value.
+    #[inline]
+    pub fn from_f64_lossy(x: f64) -> d128 {
+        d128::from((x * 1e8) as i64) * d128!(1e-8)
+    }
+
+    /// Multiplies `x` by `1e8`, truncates to integer, converts to `d128`, then
+    /// scales back down. Benches at ~200ns. A bit faster than using `FromStr`
+    /// at the cost of precision. Precision loss is much worse for larger numbers.
+    /// For the range `(-1000, 1000)` this approach is tested to return within
+    /// `1e-4` of the original value.
+    #[inline]
+    pub fn from_f32_lossy(x: f32) -> d128 {
+        d128::from((x * 1e8) as i64) * d128!(1e-8)
+    }
+
     /// Returns the thread local status.
     pub fn get_status() -> Status {
         d128::with_context(|ctx| Status::from_bits_truncate(ctx.status))
@@ -1474,7 +1494,7 @@ mod tests {
     }
 
     #[bench]
-    fn sums_vec_of_100_000(b: &mut Bencher) {
+    fn sums_vec_of_100_000_d128(b: &mut Bencher) {
         let x = d128!(0.00012345);
         let mut xs: Vec<d128> = Vec::with_capacity(100_000);
         for i in 0..100_000u32 {
@@ -1484,6 +1504,102 @@ mod tests {
         b.iter(|| {
             xs.iter().sum::<d128>()
         });
+    }
+
+    #[bench]
+    fn d128_to_u64(b: &mut Bencher) {
+        let x = d128!(12345);
+        b.iter(|| u64::from(x));
+    }
+
+    #[bench]
+    fn u64_to_d128(b: &mut Bencher) {
+        let x = 12345u64;
+        b.iter(|| d128::from(x));
+    }
+
+    #[bench]
+    fn d128_from_f32_via_u64_1e8(b: &mut Bencher) {
+        let x = 1.2345f32;
+        b.iter(|| {
+            d128::from((x * 1e8) as i64) * d128!(1e-8)
+        });
+    }
+    #[bench]
+    fn d128_from_f32_via_u64_2_powi_27(b: &mut Bencher) {
+        let x = 1.2345f32;
+        b.iter(|| {
+            // note: 1 / 134_217_728 = 7.450580596923828125E-9
+            d128::from((x * 134_217_728f32) as i64) * d128!(7.450580596923828125E-9)
+        });
+    }
+
+    #[bench]
+    fn d128_from_f32_via_from_str(b: &mut Bencher) {
+        let x = 1.2345f32;
+        b.iter(|| {
+            d128::from_str(&format!("{}", x))
+        });
+    }
+
+    #[test]
+    fn validate_from_f64_lossy_small() {
+        let min = -1_000.0f64;
+        let max =  1_000.0f64;
+        let n = (max - min) as usize * 100;
+        let mut i = min;
+        for j in 0..n {
+            i += 0.01;
+            //let a = d128::from((i * 1e8) as i64) * d128!(1e-8);
+            let a = d128::from_f64_lossy(i);
+            let b = d128::from_str(&format!("{}", i)).unwrap();
+            assert!((a - b).abs() < d128!(0.0001), "i = {}, a = {}, b = {}, j = {}", i, a, b, j);
+        }
+    }
+
+    #[test]
+    fn validate_from_f64_lossy() {
+        let min = -500_000.0f64;
+        let max =  500_000.0f64;
+        let n = (max - min) as usize * 2;
+        let mut i = min;
+        for j in 0..n {
+            i += 0.5;
+            //let a = d128::from((i * 1e8) as i64) * d128!(1e-8);
+            let a = d128::from_f64_lossy(i);
+            let b = d128::from_str(&format!("{}", i)).unwrap();
+            assert!((a - b).abs() < d128!(0.1), "i = {}, a = {}, b = {}, j = {}", i, a, b, j);
+        }
+    }
+
+    #[test]
+    fn validate_from_f32_lossy_small() {
+        let min = -1_000.0f32;
+        let max =  1_000.0f32;
+        let n = (max - min) as usize * 100;
+        let mut i = min;
+        for j in 0..n {
+            i += 0.01;
+            //let a = d128::from((i * 1e8) as i64) * d128!(1e-8);
+            let a = d128::from_f32_lossy(i);
+            let b = d128::from_str(&format!("{}", i)).unwrap();
+            assert!((a - b).abs() < d128!(0.0001), "i = {}, a = {}, b = {}, j = {}", i, a, b, j);
+        }
+    }
+
+    #[test]
+    fn validate_from_f32_lossy() {
+        let min = -500_000.0f32;
+        let max =  500_000.0f32;
+        let n = (max - min) as usize * 2;
+        let mut i = min;
+        for j in 0..n {
+            i += 0.5;
+            //let a = d128::from((i * 1e8) as i64) * d128!(1e-8);
+            let a = d128::from_f32_lossy(i);
+            let b = d128::from_str(&format!("{}", i)).unwrap();
+            assert!((a - b).abs() < d128!(0.1), "i = {}, a = {}, b = {}, j = {}", i, a, b, j);
+        }
     }
 
     #[test]
