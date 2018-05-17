@@ -1401,7 +1401,7 @@ mod tests {
     }
 
 
-    #[cfg(feature = "simd-benchmarks")]
+    #[cfg(feature = "faster")]
     #[bench]
     fn sums_vec_of_100_000_u64_1e8_of_float_simd(b: &mut Bencher) {
         use faster::*;
@@ -1414,8 +1414,8 @@ mod tests {
         }
 
         assert!(
-            ((&xs[..]).simd_iter()
-                .simd_reduce(u64s(0), u64s(0), |acc, v| acc + v)
+            ((&xs[..]).simd_iter(u64s(0))
+                .simd_reduce(u64s(0), |acc, v| acc + v)
                 .sum() as f64 / 1e8)
             -
             ys.iter().sum::<f64>()
@@ -1424,13 +1424,13 @@ mod tests {
         );
 
         b.iter(|| {
-            ((&xs[..]).simd_iter()
-                .simd_reduce(u64s(0), u64s(0), |acc, v| acc + v)
+            ((&xs[..]).simd_iter(u64s(0))
+                .simd_reduce(u64s(0), |acc, v| acc + v)
                 .sum() as f64 / 1e8)
         });
     }
 
-    #[cfg(feature = "simd-benchmarks")]
+    #[cfg(feature = "faster")]
     #[bench]
     fn sums_vec_of_100_000_f32_simd(b: &mut Bencher) {
         use faster::*;
@@ -1441,8 +1441,8 @@ mod tests {
         }
 
         b.iter(|| {
-            (&xs[..]).simd_iter()
-                .simd_reduce(f32s(0.0), f32s(0.0), |acc, v| acc + v)
+            (&xs[..]).simd_iter(f32s(0.0))
+                .simd_reduce(f32s(0.0), |acc, v| acc + v)
                 .sum()
         });
     }

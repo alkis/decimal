@@ -16,7 +16,7 @@ extern crate serde_json;
 extern crate rand;
 #[cfg(test)]
 extern crate test;
-#[cfg(feature = "simd-benchmarks")]
+#[cfg(feature = "faster")]
 extern crate faster;
 #[cfg(feature = "slog")]
 extern crate slog;
