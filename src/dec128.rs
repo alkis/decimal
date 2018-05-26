@@ -186,8 +186,7 @@ impl From<d128> for f32 {
             }
         } else {
             // for whatever reason, the f32::from_str is slow
-            f64::from_str(&(format!("{}", x)))
-                //.expect(&format!("f64::from_str conversion from d128: {}", x))
+            f64::from_str(&format!("{}", x))
                 .unwrap_or(f64::NAN)
                 as f32
         }
