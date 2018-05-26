@@ -1688,6 +1688,44 @@ mod tests {
         });
     }
 
+    #[bench]
+    fn rand_0_1_via_f64(b: &mut Bencher) {
+        let mut rng = rand::thread_rng();
+        let range = Range::new(-1f64, 1f64);
+        b.iter(|| {
+            d128::from_f64_lossy(range.ind_sample(&mut rng))
+        });
+    }
+
+    #[bench]
+    fn rand_0_1_via_f32(b: &mut Bencher) {
+        let mut rng = rand::thread_rng();
+        let range = Range::new(-1f32, 1f32);
+        b.iter(|| {
+            d128::from_f32_lossy(range.ind_sample(&mut rng))
+        });
+    }
+
+    #[bench]
+    fn rand_0_1_via_u32(b: &mut Bencher) {
+        let mut rng = rand::thread_rng();
+        let range = Range::new(0u32, 2_000_000u32);
+        let e = d128!(1_000_000);
+        b.iter(|| {
+            (d128::from(range.ind_sample(&mut rng)) - e) / e
+        });
+    }
+
+    #[bench]
+    fn rand_0_1_via_i32(b: &mut Bencher) {
+        let mut rng = rand::thread_rng();
+        let range = Range::new(-1_000_000i32, 1_000_000i32);
+        let e = d128!(1_000_000);
+        b.iter(|| {
+            d128::from(range.ind_sample(&mut rng)) / e
+        });
+    }
+
     #[test]
     fn test_deref_does_not_blow_the_machine_up() {
         fn add(a: &d128, b: &d128) -> d128 {
