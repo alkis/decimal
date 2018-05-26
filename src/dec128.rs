@@ -24,6 +24,7 @@ use std::ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Div, DivAssign, R
                ShlAssign, Shr, ShrAssign};
 use std::str::FromStr;
 use std::str::from_utf8_unchecked;
+use void::Void;
 
 thread_local!(static CTX: RefCell<Context> = RefCell::new(d128::default_context()));
 
@@ -185,10 +186,10 @@ impl AsRef<d128> for d128 {
 /// no limit to the coefficient length for finite inputs; NaN payloads must be integers with no
 /// more than 33 digits. Exponents may have up to nine significant digits. The syntax of the string
 /// is fully checked; if it is not valid, the result will be a quiet NaN and an error flag will be
-/// set.
+/// set - the `Result` will never be an `Err` variant.
 impl FromStr for d128 {
-    type Err = ();
-    fn from_str(s: &str) -> Result<Self, ()> {
+    type Err = Void;
+    fn from_str(s: &str) -> Result<Self, Void> {
         let cstr = match CString::new(s) {
             Err(..) => CString::new("qNaN").unwrap(),
             Ok(cstr) => cstr,
