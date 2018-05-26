@@ -26,8 +26,6 @@ pub fn plugin_registrar(reg: &mut Registry) {
     reg.register_macro("d128", self::d128_lit::d128_lit);
 }
 
-
-
 mod d128_lit {
     use super::*;
 
@@ -53,13 +51,18 @@ mod d128_lit {
                         cx.span_err(sp, "one argument needed");
                         return DummyResult::any(sp);
                     }
-                    let num = match d128_from_str(s.as_str().as_ref()) {
+
+                    // remove underscore separators
+                    let clean: String = s.as_str().replace("_", "");
+
+                    let num = match d128_from_str(&clean) {
                         Ok(num) => num,
                         Err(s) => {
                             cx.span_err(lit.span, s);
                             return DummyResult::any(sp);
                         }
                     };
+
                     let num = unsafe { ::std::mem::transmute::<d128, [u8; 16]>(num) };
                     
                     // Create array literal
@@ -130,7 +133,11 @@ mod d64_lit {
                         cx.span_err(sp, "one argument needed");
                         return DummyResult::any(sp);
                     }
-                    let num = match d64_from_str(s.as_str().as_ref()) {
+
+                    // remove underscore separators
+                    let clean: String = s.as_str().replace("_", "");
+
+                    let num = match d64_from_str(&clean) {
                         Ok(num) => num,
                         Err(s) => {
                             cx.span_err(lit.span, s);
