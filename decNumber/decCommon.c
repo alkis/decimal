@@ -1607,6 +1607,16 @@ char * decFloatToString(const decFloat *df, char *string){
   pre=(Int)(c-cstart)+exp;         // length+exp  [c->LSD+1]
   // [here, pre-exp is the digits count (==1 for zero)]
 
+  // if (exp>0) {
+  //
+  // if (exp>0 || pre<-7) {
+  //
+  // neither of the above variations worked during an attempt to
+  // remove exponential form entirely from this function. In both
+  // cases it ended up returning "0.00" for 1e-8
+  //
+  // - JS 6/1/18
+  //
   if (exp>0 || pre<-5) {           // need exponential form
     e=pre-1;                       // calculate E value
     pre=1;                         // assume one digit before '.'
