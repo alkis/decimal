@@ -15,8 +15,16 @@ name = "decimal"
 path = "src/lib.rs"
 
 [[bin]]
-path = "src/get_bytes.rs"
+path = "src/bytes.rs"
 name = "bytes"
+
+[[bin]]
+path = "src/to_string.rs"
+name = "to-string"
+
+[[bin]]
+path = "src/run_test.rs"
+name = "run-test"
 
 [dependencies]
 bitflags = "1"
