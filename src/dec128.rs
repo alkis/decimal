@@ -1506,6 +1506,17 @@ mod tests {
     }
 
     #[bench]
+    fn d128_mult_1e8_convert_u64_as_i64_mult_neg_one(b: &mut Bencher) {
+        let price = d128!(6128.1234567);
+        let to = |x: d128| -> i64 { -(u64::from(x * d128!(1e8)) as i64) };
+        let from = |x: i64| -> d128 { d128::from(-x as u64) / d128!(1e8) };
+        assert_eq!(price, from(to(price)));
+        b.iter(|| {
+            -(u64::from(price * d128!(1e8)) as i64)
+        });
+    }
+
+    #[bench]
     fn d128_to_u64(b: &mut Bencher) {
         let x = d128!(12345);
         b.iter(|| u64::from(x));
