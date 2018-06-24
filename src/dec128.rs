@@ -694,6 +694,9 @@ impl d128 {
         self.bytes
     }
 
+    /// Returns `self.to_raw_bytes()`. I prefer this name.
+    pub fn as_bytes(&self) -> [u8; 16] { self.to_raw_bytes() }
+
     /// Multiplies `x` by `1e8`, truncates to integer, converts to `d128`, then
     /// scales back down. Benches at ~200ns. A bit faster than using `FromStr`
     /// at the cost of precision. Precision loss is much worse for larger numbers.
