@@ -33,7 +33,7 @@ mod d128_lit {
         // Turn input into a string literal
         // e.g. d128!(0.1) -> "0.1", d128!(NaN) -> "NaN"
         let mac_res = source_util::expand_stringify(cx, sp, tts);
-        
+
         let ex = match mac_res.make_expr() {
             Some(ex) => ex,
             None => {
@@ -42,7 +42,7 @@ mod d128_lit {
                 return DummyResult::any(sp);
             }
         };
-        
+
         match &ex.node {
             &ExprKind::Lit(ref lit) => match &lit.node {
                 &LitKind::Str(ref s, StrStyle::Cooked) => {
@@ -64,7 +64,7 @@ mod d128_lit {
                     };
 
                     let num = unsafe { ::std::mem::transmute::<d128, [u8; 16]>(num) };
-                    
+
                     // Create array literal
                     let mut vec = Vec::new();
                     for i in 0..16 {
@@ -73,7 +73,7 @@ mod d128_lit {
                     let vec = cx.expr_vec(lit.span, vec);
                     let ids = vec![cx.ident_of("decimal"), cx.ident_of("d128"), cx.ident_of("from_raw_bytes")];
                     let ex = cx.expr_call_global(lit.span, ids, vec![vec]);
-                    
+
                     return MacEager::expr(ex);
                 },
                 _ => {}
@@ -90,7 +90,7 @@ mod d128_lit {
         d128::set_status(decimal::Status::empty());
         let no_spaces = s.replace(" ", "");
         let res = d128::from_str(&no_spaces);
-        
+
         let status = d128::get_status();
         if status.contains(decimal::Status::CONVERSION_SYNTAX) {
             println!("{} {:?}", s, res);
@@ -115,7 +115,7 @@ mod d64_lit {
         // Turn input into a string literal
         // e.g. d64!(0.1) -> "0.1", d64!(NaN) -> "NaN"
         let mac_res = source_util::expand_stringify(cx, sp, tts);
-        
+
         let ex = match mac_res.make_expr() {
             Some(ex) => ex,
             None => {
@@ -124,7 +124,7 @@ mod d64_lit {
                 return DummyResult::any(sp);
             }
         };
-        
+
         match &ex.node {
             &ExprKind::Lit(ref lit) => match &lit.node {
                 &LitKind::Str(ref s, StrStyle::Cooked) => {
@@ -145,7 +145,7 @@ mod d64_lit {
                         }
                     };
                     let num = unsafe { ::std::mem::transmute::<d64, [u8; 8]>(num) };
-                    
+
                     // Create array literal
                     let mut vec = Vec::new();
                     for i in 0..8 {
@@ -154,7 +154,7 @@ mod d64_lit {
                     let vec = cx.expr_vec(lit.span, vec);
                     let ids = vec![cx.ident_of("decimal"), cx.ident_of("d64"), cx.ident_of("from_raw_bytes")];
                     let ex = cx.expr_call_global(lit.span, ids, vec![vec]);
-                    
+
                     return MacEager::expr(ex);
                 },
                 _ => {}
@@ -171,7 +171,7 @@ mod d64_lit {
         d64::set_status(decimal::Status::empty());
         let no_spaces = s.replace(" ", "");
         let res = d64::from_str(&no_spaces);
-        
+
         let status = d64::get_status();
         if status.contains(decimal::Status::CONVERSION_SYNTAX) {
             println!("{} {:?}", s, res);
