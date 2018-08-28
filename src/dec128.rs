@@ -1137,6 +1137,14 @@ impl d128 {
             false => f()
         }
     }
+
+    pub fn finite_or_err<E>(self, err: E) -> Result<d128, E> {
+        if self.is_finite() {
+            Ok(self)
+        } else {
+            Err(err)
+        }
+    }
 }
 
 #[cfg(feature = "slog")]
