@@ -1,4 +1,8 @@
-#![feature(plugin_registrar, rustc_private)]
+//#![feature(plugin_registrar, rustc_private, const_let, const_fn)]
+#![crate_name = "decimal_macros"]
+#![crate_type = "dylib"]
+#![feature(plugin_registrar)]
+#![feature(rustc_private)]
 
 extern crate libc;
 extern crate decimal;
@@ -11,6 +15,7 @@ use syntax::ext::base::{DummyResult, MacEager, ExtCtxt, MacResult};
 #[allow(unused_imports)]
 use syntax::ext::build::AstBuilder;
 use syntax::ext::source_util;
+//use syntax::source_map::Span; // changes after nightly-2018-08-06
 use syntax::codemap::Span;
 use syntax::ast::{ExprKind, LitKind, StrStyle};
 use syntax::tokenstream::TokenTree;
@@ -63,7 +68,8 @@ mod d128_lit {
                         }
                     };
 
-                    let num = unsafe { ::std::mem::transmute::<d128, [u8; 16]>(num) };
+                    //let num = unsafe { ::std::mem::transmute::<d128, [u8; 16]>(num) };
+                    let num = num.as_bytes();
 
                     // Create array literal
                     let mut vec = Vec::new();

@@ -1,4 +1,4 @@
-#![feature(plugin, const_fn)]
+#![feature(plugin, const_fn, const_let)]
 #![plugin(decimal_macros)]
 extern crate decimal;
 
@@ -28,7 +28,6 @@ fn zero_eq_zero() {
 
 #[test]
 fn create_d128_const() {
-    const ZERO: d128 = d128!(0);
+    static ZERO: d128 = { d128!(0) };
     assert_eq!(ZERO, d128::zero());
 }
-
