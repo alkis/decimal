@@ -193,6 +193,8 @@ impl From<d128> for f32 {
     }
 }
 
+/// Create a `u64` from a `d128`, which is assumed to be > 0.
+///
 /// # Examples
 /// ```
 /// #[macro_use]
@@ -232,6 +234,80 @@ impl From<d128> for u64 {
             e if e < 0 => (u / 10u128.pow(exp.abs() as u32)) as u64,
 
             _ => u as u64
+        }
+        // if exp > 0 {
+        //     u *= 10u64.pow(exp as u32);
+        // } else if exp < 0 {
+        //     u /= 10u64.pow(exp.abs() as u32)
+        // }
+        // u
+        //(u * exp as i64) as u64
+        // bcd.iter()
+        //     .rev()
+        //     .enumerate()
+        //     .take(val.digits() as usize)
+        //     .fold(0, |acc, (i, x)| acc + (*x as u64 ) * 10u64.pow(i as u32))
+    }
+}
+
+/// Create a `u128` from a `d128`, which is assumed to be > 0.
+///
+/// # Examples
+/// ```
+/// #[macro_use]
+/// extern crate decimal;
+///
+/// fn main() {
+///     let x = d128!(12345);
+///     assert_eq!(u128::from(x), 12345u128);
+/// }
+/// ```
+impl From<d128> for u128 {
+    #[inline]
+    fn from(val: d128) -> u128 {
+        debug_assert!(val >= d128::zero());
+        let n: usize;
+        let r: d128;
+        const ONE: d128 = d128::from_raw_bytes([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 34]);
+        debug_assert_eq!(ONE, d128!(1));
+        match val.digits() {
+            x @ 0 ... 33 => {
+                n = x as usize;
+                r = val;
+            }
+
+            _ => {
+                r = val.truncate(ONE);
+                n = r.digits() as usize;
+            }
+        }
+        debug_assert!(n < 34);
+
+        //let mut bcd = [0; 34];
+        let mut bcd: [u8; 34] = unsafe { uninitialized() };
+        let mut exp: i32 = unsafe { uninitialized() };
+        unsafe {
+            let _ = decQuadToBCD(&r, &mut exp, &mut bcd);
+            //debug_assert_eq!(i, 0);
+        }
+        let mut u: u128 = 0;
+        let mut i: usize = 33;
+        let thresh: usize = 33usize.saturating_sub(n);
+        //assert!(n < 21, "val.digits() = {} (> 21); val = {}", n, val);
+        while i > thresh {
+            u += bcd[i] as u128 * 10u128.pow((33usize.saturating_sub(i)) as u32);
+            i -= 1;
+        }
+        // for (i, b) in bcd.iter().rev().enumerate().take(val.digits() as usize) {
+        //     u += (*b as u64) * 10u64.pow(i as u32);
+        // }
+        //println!("exp = {}", exp);
+        match exp {
+            e if e > 0 => (u * 10u128.pow(exp as u32)),
+
+            e if e < 0 => (u / 10u128.pow(exp.abs() as u32)),
+
+            _ => u
         }
         // if exp > 0 {
         //     u *= 10u64.pow(exp as u32);
@@ -1363,12 +1439,61 @@ mod tests {
         b.iter(|| f32::from(x));
     }
 
+    #[bench]
+    fn truncates_long_dec_to_int(b: &mut Bencher) {
+        let d = d128!(51.55933794806056096535214001488143);
+        const ONE: d128 = d128::from_raw_bytes([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 34]);
+        assert_eq!(ONE, d128!(1));
+        assert_eq!(d.truncate(ONE), d128!(51));
+        b.iter(|| d.truncate(ONE));
+    }
+
     #[test]
     fn checks_a_u64_conversion_that_failed_somehow() {
         let e: d128 = d128!(100000000);
         let x = d128!(10135);
         assert_eq!(u64::from(e * x), 1013500000000);
         assert_eq!(u64::from(x * e), 1013500000000);
+    }
+
+    #[test]
+    fn u128_from_d128_when_lots_of_digits() {
+        let d = d128!(51.55933794806056096535214001488143);
+        println!("d = {}, d.digits() = {}", d, d.digits());
+        //assert_eq!(u128::from(d), 51u128);
+        let q = d128!(1e-31);
+        let r = d.round(q);
+        println!("d.round(1e-32).digits() = {} (q={}, r={}, d={})", r.digits(), q, r, d);
+        assert_eq!(u128::from(r), 51u128);
+        let d = d128!(511.55933794806056096535214001488143);
+        assert_eq!(u128::from(d.round(q)), 511u128);
+
+        // more than 21 digits, none fractional
+        //            123456789012345678901234567
+        let d = d128!(511559337948060560965352140);
+        assert_eq!(d.digits(), 27);
+        assert_eq!(u128::from(d), 511559337948060560965352140u128);
+        assert!(u128::from(d) > ::std::u64::MAX as u128, "u64 max = {}", ::std::u64::MAX);
+        // this mimics a real-world scenario I have where I'm scaling a d128 by 1e8
+        // to store in an integer, and storing resulting sum in a u64. An intermediate
+        // result is stored in a u128 as it is effectively (x * y) * 1e16, so that
+        // is rescaled down by 1e-8 and stored in the u64 sum. u64::MAX * 1e8 is
+        // therefore the largest value I could expect to encounter in this situation.
+        // (I think.)
+        //
+        let extra_huge = (::std::u64::MAX as u128) * 100_000_000u128;
+        let d = d128!(1844674407370955161500000001);
+        assert_eq!(u128::from(d), 1844674407370955161500000001u128);
+        assert!(u128::from(d) > extra_huge, "u64 max = {}, extra_huge = {}, d = {}",
+                ::std::u64::MAX, extra_huge, d);
+    }
+
+    #[test]
+    fn checks_a_u64_conversion_that_failed_somehow_but_with_u128() {
+        let e: d128 = d128!(100000000);
+        let x = d128!(10135);
+        assert_eq!(u128::from(e * x), 1013500000000);
+        assert_eq!(u128::from(x * e), 1013500000000);
     }
 
     #[test]
@@ -1388,6 +1513,31 @@ mod tests {
             ($n:expr) => {
                 let u: u64 = $n;
                 assert_eq!(u64::from(d128!($n)), u);
+            }
+        }
+
+        check!(0);
+        check!(1);
+        check!(2);
+        check!(3);
+        check!(4);
+        check!(10);
+        check!(100);
+        check!(1456789);
+        check!(12345678);
+        check!(123456789);
+        check!(17473551615);
+        check!(1744073551615);
+        check!(1744073709551615);
+        check!(18446744073709551615);
+    }
+
+    #[test]
+    fn verifies_u128_from_d128_on_large_number_of_examples() {
+        macro_rules! check {
+            ($n:expr) => {
+                let u: u128 = $n;
+                assert_eq!(u128::from(d128!($n)), u);
             }
         }
 
@@ -1531,6 +1681,25 @@ mod tests {
     fn d128_to_u64(b: &mut Bencher) {
         let x = d128!(12345);
         b.iter(|| u64::from(x));
+    }
+
+    #[bench]
+    fn d128_to_u128(b: &mut Bencher) {
+        let x = d128!(12345);
+        b.iter(|| u128::from(x));
+    }
+
+    #[bench]
+    fn d128_to_u128_max_digits(b: &mut Bencher) {
+        let x = d128!(51.55933794806056096535214001488143);
+        b.iter(|| u128::from(x));
+    }
+
+    #[bench]
+    fn d128_to_u128_max_digits_preemptive_truncate(b: &mut Bencher) {
+        let x = d128!(51.55933794806056096535214001488143);
+        const ONE: d128 = d128::from_raw_bytes([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 34]);
+        b.iter(|| u128::from(x.truncate(ONE)));
     }
 
     #[bench]
