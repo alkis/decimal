@@ -256,8 +256,10 @@ impl From<d128> for u64 {
 ///
 /// # Examples
 /// ```
-/// #[macro_use]
+/// #![feature(proc_macro_non_items)]
 /// extern crate decimal;
+/// extern crate decimal_macros;
+/// use decimal_macros::*;
 ///
 /// fn main() {
 ///     let x = d128!(12345);
@@ -271,7 +273,7 @@ impl From<d128> for u128 {
         let n: usize;
         let r: d128;
         const ONE: d128 = d128::from_raw_bytes([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 34]);
-        debug_assert_eq!(ONE, d128!(1));
+        debug_assert_eq!(ONE, d128::from_str("1").unwrap());
         match val.digits() {
             x @ 0 ... 33 => {
                 n = x as usize;
