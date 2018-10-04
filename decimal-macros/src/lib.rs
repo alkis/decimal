@@ -1,189 +1,43 @@
-#![feature(plugin_registrar, rustc_private)]
-
-extern crate libc;
 extern crate decimal;
+extern crate proc_macro;
+#[macro_use]
+extern crate quote;
+extern crate proc_macro2;
 
-extern crate rustc_plugin;
-extern crate syntax;
+use proc_macro::TokenStream;
+use std::str::FromStr;
 
-use rustc_plugin::Registry;
-use syntax::ext::base::{DummyResult, MacEager, ExtCtxt, MacResult};
-#[allow(unused_imports)]
-use syntax::ext::build::AstBuilder;
-use syntax::ext::source_util;
-use syntax::codemap::Span;
-use syntax::ast::{ExprKind, LitKind, StrStyle};
-use syntax::tokenstream::TokenTree;
+#[proc_macro]
+pub fn d128(input: TokenStream) -> TokenStream {
+    let source = input.to_string();
+    let source = source.replace(" ", "");
+    let source = source.replace("_", "");
 
-use decimal::{d128, d64};
-
-// pub use self::d128_lit::*;
-// pub use self::d64_lit::*;
-
-#[plugin_registrar]
-pub fn plugin_registrar(reg: &mut Registry) {
-    reg.register_macro("d64", self::d64_lit::d64_lit);
-    reg.register_macro("d128", self::d128_lit::d128_lit);
+    let d = match decimal::d128::from_str(&source[..]) {
+        Ok(d) => d,
+        Err(e) => panic!("Unexpected decimal format for {}: {:?}", source, e),
+    };
+    let bytes: [u8; 16] = d.as_bytes();
+    let iter = bytes.iter();
+    let expanded = quote! {
+        ::decimal::d128::from_raw_bytes([ #(#iter,)* ])
+    };
+    expanded.into()
 }
 
-mod d128_lit {
-    use super::*;
-
-    pub(crate) fn d128_lit<'cx>(cx: &'cx mut ExtCtxt, sp: Span, tts: &[TokenTree]) -> Box<MacResult + 'cx> {
-        // Turn input into a string literal
-        // e.g. d128!(0.1) -> "0.1", d128!(NaN) -> "NaN"
-        let mac_res = source_util::expand_stringify(cx, sp, tts);
-
-        let ex = match mac_res.make_expr() {
-            Some(ex) => ex,
-            None => {
-                // I don't know when this occurs
-                cx.span_err(sp, "one argument needed");
-                return DummyResult::any(sp);
-            }
-        };
-
-        match &ex.node {
-            &ExprKind::Lit(ref lit) => match &lit.node {
-                &LitKind::Str(ref s, StrStyle::Cooked) => {
-                    // Check for empty argument
-                    if s.as_str().len() == 0 {
-                        cx.span_err(sp, "one argument needed");
-                        return DummyResult::any(sp);
-                    }
-
-                    // remove underscore separators
-                    let clean: String = s.as_str().replace("_", "");
-
-                    let num = match d128_from_str(&clean) {
-                        Ok(num) => num,
-                        Err(s) => {
-                            cx.span_err(lit.span, s);
-                            return DummyResult::any(sp);
-                        }
-                    };
-
-                    let num = unsafe { ::std::mem::transmute::<d128, [u8; 16]>(num) };
-
-                    // Create array literal
-                    let mut vec = Vec::new();
-                    for i in 0..16 {
-                        vec.push(cx.expr_u8(lit.span, num[i]));
-                    }
-                    let vec = cx.expr_vec(lit.span, vec);
-                    let ids = vec![cx.ident_of("decimal"), cx.ident_of("d128"), cx.ident_of("from_raw_bytes")];
-                    let ex = cx.expr_call_global(lit.span, ids, vec![vec]);
-
-                    return MacEager::expr(ex);
-                },
-                _ => {}
-            },
-            _ => {}
-        }
-        // This should never happen.
-        cx.span_err(sp, "not a valid d128 number");
-        DummyResult::any(sp)
-    }
-
-    fn d128_from_str(s: &str) -> Result<d128, &'static str> {
-        use std::str::FromStr;
-        d128::set_status(decimal::Status::empty());
-        let no_spaces = s.replace(" ", "");
-        let res = d128::from_str(&no_spaces);
-
-        let status = d128::get_status();
-        if status.contains(decimal::Status::CONVERSION_SYNTAX) {
-            println!("{} {:?}", s, res);
-            Err("not a valid d128 number (CONVERSION_SYNTAX)")
-        } else if status.contains(decimal::Status::OVERFLOW) {
-            Err("too large for a d128 number (OVERFLOW)")
-        } else if status.contains(decimal::Status::UNDERFLOW) {
-            Err("too small for a d128 number (UNDERFLOW)")
-        } else if !status.is_empty() {
-            Err("not a valid d128 number (is_empty)")
-        } else {
-            Ok(res.unwrap())
-        }
-    }
-
-}
-
-mod d64_lit {
-    use super::*;
-
-    pub(crate) fn d64_lit<'cx>(cx: &'cx mut ExtCtxt, sp: Span, tts: &[TokenTree]) -> Box<MacResult + 'cx> {
-        // Turn input into a string literal
-        // e.g. d64!(0.1) -> "0.1", d64!(NaN) -> "NaN"
-        let mac_res = source_util::expand_stringify(cx, sp, tts);
-
-        let ex = match mac_res.make_expr() {
-            Some(ex) => ex,
-            None => {
-                // I don't know when this occurs
-                cx.span_err(sp, "one argument needed");
-                return DummyResult::any(sp);
-            }
-        };
-
-        match &ex.node {
-            &ExprKind::Lit(ref lit) => match &lit.node {
-                &LitKind::Str(ref s, StrStyle::Cooked) => {
-                    // Check for empty argument
-                    if s.as_str().len() == 0 {
-                        cx.span_err(sp, "one argument needed");
-                        return DummyResult::any(sp);
-                    }
-
-                    // remove underscore separators
-                    let clean: String = s.as_str().replace("_", "");
-
-                    let num = match d64_from_str(&clean) {
-                        Ok(num) => num,
-                        Err(s) => {
-                            cx.span_err(lit.span, s);
-                            return DummyResult::any(sp);
-                        }
-                    };
-                    let num = unsafe { ::std::mem::transmute::<d64, [u8; 8]>(num) };
-
-                    // Create array literal
-                    let mut vec = Vec::new();
-                    for i in 0..8 {
-                        vec.push(cx.expr_u8(lit.span, num[i]));
-                    }
-                    let vec = cx.expr_vec(lit.span, vec);
-                    let ids = vec![cx.ident_of("decimal"), cx.ident_of("d64"), cx.ident_of("from_raw_bytes")];
-                    let ex = cx.expr_call_global(lit.span, ids, vec![vec]);
-
-                    return MacEager::expr(ex);
-                },
-                _ => {}
-            },
-            _ => {}
-        }
-        // This should never happen.
-        cx.span_err(sp, "not a valid d64 number");
-        DummyResult::any(sp)
-    }
-
-    fn d64_from_str(s: &str) -> Result<d64, &'static str> {
-        use std::str::FromStr;
-        d64::set_status(decimal::Status::empty());
-        let no_spaces = s.replace(" ", "");
-        let res = d64::from_str(&no_spaces);
-
-        let status = d64::get_status();
-        if status.contains(decimal::Status::CONVERSION_SYNTAX) {
-            println!("{} {:?}", s, res);
-            Err("not a valid d64 number (CONVERSION_SYNTAX)")
-        } else if status.contains(decimal::Status::OVERFLOW) {
-            Err("too large for a d64 number (OVERFLOW)")
-        } else if status.contains(decimal::Status::UNDERFLOW) {
-            Err("too small for a d64 number (UNDERFLOW)")
-        } else if !status.is_empty() {
-            Err("not a valid d64 number (is_empty)")
-        } else {
-            Ok(res.unwrap())
-        }
-    }
+#[proc_macro]
+pub fn d64(input: TokenStream) -> TokenStream {
+    let source = input.to_string();
+    let source = source.replace(" ", "");
+    let source = source.replace("_", "");
+    let d = match decimal::d64::from_str(&source[..]) {
+        Ok(d) => d,
+        Err(e) => panic!("Unexpected decimal format for {}: {:?}", source, e),
+    };
+    let bytes: [u8; 8] = d.as_bytes();
+    let iter = bytes.iter();
+    let expanded = quote! {
+        ::decimal::d64::from_raw_bytes([ #(#iter,)* ])
+    };
+    expanded.into()
 }

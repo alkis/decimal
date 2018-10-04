@@ -24,6 +24,7 @@ extern crate slog;
 #[macro_use]
 extern crate approx;
 
+/*
 #[macro_export]
 /// A macro to construct d128 literals.
 ///
@@ -75,6 +76,7 @@ macro_rules! d64 {
         $crate::d64::from_str(stringify!($lit)).expect("Invalid decimal float literal")
     }}
 }
+*/
 
 mod context;
 mod dec128;
@@ -123,8 +125,10 @@ bitflags! {
     /// # Examples
     ///
     /// ```
-    /// # #[macro_use]
+    /// # #![feature(proc_macro_non_items)]
+    /// # extern crate decimal_macros;
     /// # extern crate decimal;
+    /// # use decimal_macros::*;
     /// # use decimal::d128;
     /// # use decimal::Status;
     /// # fn main() {

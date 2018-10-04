@@ -46,6 +46,7 @@ cc = "1"
 [dev-dependencies]
 serde_json = "1"
 rand = "0.4"
+decimal-macros = { version = "0.2", path = "decimal-macros" }
 
 [profile.test]
 opt-level = 2
