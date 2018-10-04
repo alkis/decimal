@@ -25,6 +25,63 @@ use decimal::{d128, d64};
 // pub use self::d128_lit::*;
 // pub use self::d64_lit::*;
 
+/*
+ * just putting this here for posterity
+ *
+
+#[macro_export]
+/// A macro to construct d128 literals.
+///
+/// # Examples:
+/// ```
+/// # #[macro_use]
+/// # extern crate decimal;
+/// # use decimal::d128;
+/// # use std::str::FromStr;
+/// # fn main() {
+/// assert!(d128!(NaN).is_nan());
+/// assert!(d128!(0).is_zero());
+/// assert!(d128!(-0.1).is_negative());
+/// assert_eq!(d128!(1.2345), d128::from_str("1.2345").unwrap());
+/// // underscore separators work, too
+/// assert_eq!(d128!(1_000_000), d128::from_str("1000000").unwrap());
+/// # }
+/// ```
+macro_rules! d128 {
+    ($lit:expr) => {{
+        use std::str::FromStr;
+        let lit = stringify!($lit);
+        let clean: String = lit.replace("_", "");
+        $crate::d128::from_str(&clean).expect("Invalid decimal float literal")
+    }}
+}
+
+#[macro_export]
+/// A macro to construct d64 literals.
+///
+/// # Examples:
+/// ```
+/// # #[macro_use]
+/// # extern crate decimal;
+/// # use decimal::d64;
+/// # use std::str::FromStr;
+/// # fn main() {
+/// assert!(d64!(NaN).is_nan());
+/// assert!(d64!(0).is_zero());
+/// assert!(d64!(-0.1).is_negative());
+/// assert_eq!(d64!(1.2345), d64::from_str("1.2345").unwrap());
+/// // underscore separators work, too
+/// assert_eq!(d64!(1_000_000), d64::from_str("1000000").unwrap());
+/// # }
+/// ```
+macro_rules! d64 {
+    ($lit:expr) => {{
+        use std::str::FromStr;
+        $crate::d64::from_str(stringify!($lit)).expect("Invalid decimal float literal")
+    }}
+}
+*/
+
 #[plugin_registrar]
 pub fn plugin_registrar(reg: &mut Registry) {
     reg.register_macro("d64", self::d64_lit::d64_lit);
