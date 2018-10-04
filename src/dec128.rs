@@ -195,8 +195,10 @@ impl From<d128> for f32 {
 
 /// # Examples
 /// ```
-/// #[macro_use]
+/// #![feature(proc_macro_non_items)]
 /// extern crate decimal;
+/// extern crate decimal_macros;
+/// use decimal_macros::*;
 ///
 /// fn main() {
 ///     let x = d128!(12345);
@@ -269,10 +271,10 @@ impl From<u64> for d128 {
 ///
 /// # Examples
 /// ```
-/// #![feature(i128, i128_type)]
-/// #[macro_use]
+/// #![feature(proc_macro_non_items)]
 /// extern crate decimal;
-///
+/// extern crate decimal_macros;
+/// use decimal_macros::*;
 /// use decimal::d128;
 ///
 /// fn main() {
@@ -702,9 +704,10 @@ impl d128 {
     /// at the cost of precision. Precision loss is much worse for larger numbers.
     /// For the range `(-1000, 1000)` this approach is tested to return within
     /// `1e-4` of the original value.
+    #[deprecated(since="2.1.6")]
     #[inline]
     pub fn from_f64_lossy(x: f64) -> d128 {
-        d128::from((x * 1e8) as i64) * d128!(1e-8)
+        d128::from((x * 1e8) as i64) * d128::from_str("1e-8").unwrap()
     }
 
     /// Multiplies `x` by `1e8`, truncates to integer, converts to `d128`, then
@@ -712,9 +715,10 @@ impl d128 {
     /// at the cost of precision. Precision loss is much worse for larger numbers.
     /// For the range `(-1000, 1000)` this approach is tested to return within
     /// `1e-4` of the original value.
+    #[deprecated(since="2.1.6")]
     #[inline]
     pub fn from_f32_lossy(x: f32) -> d128 {
-        d128::from((x * 1e8) as i64) * d128!(1e-8)
+        d128::from((x * 1e8) as i64) * d128::from_str("1e-8").unwrap()
     }
 
     /// Returns the thread local status.
@@ -757,13 +761,15 @@ impl d128 {
     }
 
     /// Returns the d128 representing +Infinity.
+    #[deprecated(since="2.1.6")]
     pub fn infinity() -> d128 {
-        d128!(Infinity)
+        d128::from_str("Infinity").unwrap()
     }
 
     /// Returns the d128 representing -Infinity.
+    #[deprecated(since="2.1.6")]
     pub fn neg_infinity() -> d128 {
-        d128!(-Infinity)
+        d128::from_str("-Infinity").unwrap()
     }
 
     // Computational.
@@ -905,8 +911,10 @@ impl d128 {
     /// # Examples
     ///
     /// ```
-    /// #[macro_use]
+    /// #![feature(proc_macro_non_items)]
     /// extern crate decimal;
+    /// extern crate decimal_macros;
+    /// use decimal_macros::*;
     ///
     /// fn main() {
     ///     let prec = d128!(0.1);
@@ -925,8 +933,10 @@ impl d128 {
     /// # Examples
     ///
     /// ```
-    /// #[macro_use]
+    /// #![feature(proc_macro_non_items)]
     /// extern crate decimal;
+    /// extern crate decimal_macros;
+    /// use decimal_macros::*;
     ///
     /// fn main() {
     ///     let prec = d128!(0.1);
@@ -944,8 +954,10 @@ impl d128 {
     /// # Examples
     ///
     /// ```
-    /// #[macro_use]
+    /// #![feature(proc_macro_non_items)]
     /// extern crate decimal;
+    /// extern crate decimal_macros;
+    /// use decimal_macros::*;
     ///
     /// fn main() {
     ///     let prec = d128!(0.1);
@@ -977,8 +989,10 @@ impl d128 {
     ///
     /// # Examples
     /// ```
-    /// #[macro_use]
+    /// #![feature(proc_macro_non_items)]
     /// extern crate decimal;
+    /// extern crate decimal_macros;
+    /// use decimal_macros::*;
     ///
     /// fn main() {
     ///     let x = d128!(1.2345);
@@ -1313,6 +1327,15 @@ mod tests {
 
     #[allow(unused_imports)]
     use test::{black_box, Bencher};
+
+    macro_rules! d128 {
+        ($lit:expr) => {{
+            use std::str::FromStr;
+            let lit = stringify!($lit);
+            let clean: String = lit.replace("_", "");
+            $crate::d128::from_str(&clean).expect("Invalid decimal float literal")
+        }}
+    }
 
     #[test]
     fn d128_to_f32_fuzz() {

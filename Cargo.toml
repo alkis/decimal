@@ -1,6 +1,6 @@
 [package]
 name = "decimal"
-version = "2.1.5"
+version = "2.1.6"
 authors = ["Alkis Evlogimenos <alkis@evlogimenos.com>"]
 build = "build.rs"
 description = "Decimal floating point arithmetic for Rust"
@@ -46,6 +46,7 @@ cc = "1"
 [dev-dependencies]
 serde_json = "1"
 rand = "0.4"
+decimal-macros = { version = "0.2", path = "decimal-macros" }
 
 [profile.test]
 opt-level = 2

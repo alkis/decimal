@@ -32,6 +32,7 @@ thread_local!(static CTX: RefCell<Context> = RefCell::new(d64::default_context()
 thread_local!(static ROUND_DOWN: RefCell<Context> = RefCell::new(d64::with_rounding(Rounding::Down)));
 thread_local!(static HALF_UP: RefCell<Context> = RefCell::new(d64::with_rounding(Rounding::HalfUp)));
 
+
 #[repr(C)]
 #[derive(Clone, Copy)]
 /// A 64-bit decimal floating point type.
@@ -545,6 +546,10 @@ impl d64 {
         self.bytes
     }
 
+    pub fn as_bytes(&self) -> [u8; 8] {
+        self.bytes
+    }
+
     /// Returns the thread local status.
     pub fn get_status() -> Status {
         d64::with_context(|ctx| Status::from_bits_truncate(ctx.status))
@@ -586,12 +591,12 @@ impl d64 {
 
     /// Returns the d64 representing +Infinity.
     pub fn infinity() -> d64 {
-        d64!(Infinity)
+        d64::from_str("Infinity").unwrap()
     }
 
     /// Returns the d64 representing -Infinity.
     pub fn neg_infinity() -> d64 {
-        d64!(-Infinity)
+        d64::from_str("-Infinity").unwrap()
     }
 
     // Computational.
@@ -733,8 +738,10 @@ impl d64 {
     /// # Examples
     ///
     /// ```
-    /// #[macro_use]
+    /// #![feature(proc_macro_non_items)]
     /// extern crate decimal;
+    /// extern crate decimal_macros;
+    /// use decimal_macros::*;
     ///
     /// fn main() {
     ///     let prec = d64!(0.1);
@@ -753,8 +760,10 @@ impl d64 {
     /// # Examples
     ///
     /// ```
-    /// #[macro_use]
+    /// #![feature(proc_macro_non_items)]
     /// extern crate decimal;
+    /// extern crate decimal_macros;
+    /// use decimal_macros::*;
     ///
     /// fn main() {
     ///     let prec = d64!(0.1);
@@ -772,8 +781,10 @@ impl d64 {
     /// # Examples
     ///
     /// ```
-    /// #[macro_use]
+    /// #![feature(proc_macro_non_items)]
     /// extern crate decimal;
+    /// extern crate decimal_macros;
+    /// use decimal_macros::*;
     ///
     /// fn main() {
     ///     let prec = d64!(0.1);
@@ -1130,6 +1141,22 @@ mod tests {
 
     #[allow(unused_imports)]
     use test::{black_box, Bencher};
+
+    macro_rules! d128 {
+        ($lit:expr) => {{
+            use std::str::FromStr;
+            let lit = stringify!($lit);
+            let clean: String = lit.replace("_", "");
+            $crate::d128::from_str(&clean).expect("Invalid decimal float literal")
+        }}
+    }
+
+    macro_rules! d64 {
+        ($lit:expr) => {{
+            use std::str::FromStr;
+            $crate::d64::from_str(stringify!($lit)).expect("Invalid decimal float literal")
+        }}
+    }
 
     #[test]
     fn from_d128() {
