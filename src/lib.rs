@@ -72,7 +72,7 @@ bitflags! {
     /// # Examples
     ///
     /// ```
-    /// # #![feature(proc_macro_non_items)]
+    /// # #![feature(proc_macro_hygiene)]
     /// # extern crate decimal_macros;
     /// # extern crate decimal;
     /// # use decimal_macros::*;

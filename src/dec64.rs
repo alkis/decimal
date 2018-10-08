@@ -738,7 +738,7 @@ impl d64 {
     /// # Examples
     ///
     /// ```
-    /// #![feature(proc_macro_non_items)]
+    /// #![feature(proc_macro_hygiene)]
     /// extern crate decimal;
     /// extern crate decimal_macros;
     /// use decimal_macros::*;
@@ -760,7 +760,7 @@ impl d64 {
     /// # Examples
     ///
     /// ```
-    /// #![feature(proc_macro_non_items)]
+    /// #![feature(proc_macro_hygiene)]
     /// extern crate decimal;
     /// extern crate decimal_macros;
     /// use decimal_macros::*;
@@ -781,7 +781,7 @@ impl d64 {
     /// # Examples
     ///
     /// ```
-    /// #![feature(proc_macro_non_items)]
+    /// #![feature(proc_macro_hygiene)]
     /// extern crate decimal;
     /// extern crate decimal_macros;
     /// use decimal_macros::*;

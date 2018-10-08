@@ -197,7 +197,7 @@ impl From<d128> for f32 {
 ///
 /// # Examples
 /// ```
-/// #![feature(proc_macro_non_items)]
+/// #![feature(proc_macro_hygiene)]
 /// extern crate decimal;
 /// extern crate decimal_macros;
 /// use decimal_macros::*;
@@ -256,7 +256,7 @@ impl From<d128> for u64 {
 ///
 /// # Examples
 /// ```
-/// #![feature(proc_macro_non_items)]
+/// #![feature(proc_macro_hygiene)]
 /// extern crate decimal;
 /// extern crate decimal_macros;
 /// use decimal_macros::*;
@@ -349,7 +349,7 @@ impl From<u64> for d128 {
 ///
 /// # Examples
 /// ```
-/// #![feature(proc_macro_non_items)]
+/// #![feature(proc_macro_hygiene)]
 /// extern crate decimal;
 /// extern crate decimal_macros;
 /// use decimal_macros::*;
@@ -989,7 +989,7 @@ impl d128 {
     /// # Examples
     ///
     /// ```
-    /// #![feature(proc_macro_non_items)]
+    /// #![feature(proc_macro_hygiene)]
     /// extern crate decimal;
     /// extern crate decimal_macros;
     /// use decimal_macros::*;
@@ -1011,7 +1011,7 @@ impl d128 {
     /// # Examples
     ///
     /// ```
-    /// #![feature(proc_macro_non_items)]
+    /// #![feature(proc_macro_hygiene)]
     /// extern crate decimal;
     /// extern crate decimal_macros;
     /// use decimal_macros::*;
@@ -1032,7 +1032,7 @@ impl d128 {
     /// # Examples
     ///
     /// ```
-    /// #![feature(proc_macro_non_items)]
+    /// #![feature(proc_macro_hygiene)]
     /// extern crate decimal;
     /// extern crate decimal_macros;
     /// use decimal_macros::*;
@@ -1067,7 +1067,7 @@ impl d128 {
     ///
     /// # Examples
     /// ```
-    /// #![feature(proc_macro_non_items)]
+    /// #![feature(proc_macro_hygiene)]
     /// extern crate decimal;
     /// extern crate decimal_macros;
     /// use decimal_macros::*;

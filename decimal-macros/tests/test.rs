@@ -1,4 +1,4 @@
-#![feature(proc_macro_non_items)]
+#![feature(proc_macro_hygiene)]
 #![feature(const_fn)]
 #![feature(const_let)]
 
