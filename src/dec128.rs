@@ -777,16 +777,11 @@ impl d128 {
     /// Returns `self.to_raw_bytes()`. I prefer this name.
     pub fn as_bytes(&self) -> [u8; 16] { self.to_raw_bytes() }
 
-    /// Multiplies `x` by `1e8`, truncates to integer, converts to `d128`, then
-    /// scales back down. Benches at ~200ns. A bit faster than using `FromStr`
-    /// at the cost of precision. Precision loss is much worse for larger numbers.
-    /// For the range `(-1000, 1000)` this approach is tested to return within
-    /// `1e-4` of the original value.
-    #[deprecated(since="2.1.6", note="`d128!(..)` macro now unavailable inside crate, \
-                                      so this implementation is forced to use \
-                                      `d128::from_str`, which is slow")]
+    /// For benchmark comparisons.
+    ///
+    #[cfg(test)]
     #[inline]
-    pub fn from_f64_lossy(x: f64) -> d128 {
+    fn baseline_from_f64_lossy(x: f64) -> d128 {
         d128::from((x * 1e8) as i64) * d128::from_str("1e-8").unwrap()
     }
 
@@ -795,12 +790,27 @@ impl d128 {
     /// at the cost of precision. Precision loss is much worse for larger numbers.
     /// For the range `(-1000, 1000)` this approach is tested to return within
     /// `1e-4` of the original value.
-    #[deprecated(since="2.1.6", note="`d128!(..)` macro now unavailable inside crate, \
-                                      so this implementation is forced to use \
-                                      `d128::from_str`, which is slow")]
+    #[cfg(target_endian = "little")]
+    #[inline]
+    pub fn from_f64_lossy(x: f64) -> d128 {
+        const SCALE: d128 =
+            d128::from_raw_bytes([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 34]);
+        debug_assert_eq!(SCALE, d128::from_str("1e-8").unwrap());
+        d128::from((x * 1e8) as i64) * SCALE
+    }
+
+    /// Multiplies `x` by `1e8`, truncates to integer, converts to `d128`, then
+    /// scales back down. Benches at ~200ns. A bit faster than using `FromStr`
+    /// at the cost of precision. Precision loss is much worse for larger numbers.
+    /// For the range `(-1000, 1000)` this approach is tested to return within
+    /// `1e-4` of the original value.
+    #[cfg(target_endian = "little")]
     #[inline]
     pub fn from_f32_lossy(x: f32) -> d128 {
-        d128::from((x * 1e8) as i64) * d128::from_str("1e-8").unwrap()
+        const SCALE: d128 =
+            d128::from_raw_bytes([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 34]);
+        debug_assert_eq!(SCALE, d128::from_str("1e-8").unwrap());
+        d128::from((x * 1e8) as i64) * SCALE
     }
 
     /// Returns the thread local status.
@@ -1905,6 +1915,15 @@ mod tests {
         b.iter(|| {
             let d: d128 = rng.gen::<u64>().into();
             d
+        });
+    }
+
+    #[bench]
+    fn rand_0_1_via_f64_baseline(b: &mut Bencher) {
+        let mut rng = rand::thread_rng();
+        let range = Range::new(-1f64, 1f64);
+        b.iter(|| {
+            d128::baseline_from_f64_lossy(range.ind_sample(&mut rng))
         });
     }
 
