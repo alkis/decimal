@@ -563,13 +563,14 @@ impl d64 {
     /// Reads the hex binary representation from a string. This is the reverse of formatting with
     /// {:x}.
     pub fn from_hex(s: &str) -> d64 {
-        if s.len() != 32 {
+        if s.len() != 16 {
             Self::from_str("qNaN").unwrap()
         } else {
             unsafe {
                 let mut res: d64 = uninitialized();
                 for (i, octet) in s.as_bytes().chunks(2).rev().enumerate() {
-                    res.bytes[i] = match u8::from_str_radix(from_utf8_unchecked(octet), 8) {
+                    //println!("i = {}, octet = {:?}", i, octet);
+                    res.bytes[i] = match u8::from_str_radix(from_utf8_unchecked(octet), 16) {
                         Ok(val) => val,
                         Err(..) => return Self::from_str("qNaN").unwrap(),
                     };
@@ -1156,6 +1157,17 @@ mod tests {
             use std::str::FromStr;
             $crate::d64::from_str(stringify!($lit)).expect("Invalid decimal float literal")
         }}
+    }
+
+    #[test]
+    fn dectest_failing_ddcan_302() {
+        //println!();
+        //println!("{:x}", d64!(1.2345));
+        //println!("{:x}", d64!(8646910459111537919));
+        let s = "77ffff3fcff3fcff";
+        let d = d64::from_hex(s);
+        let hex = format!("{:x}", d);
+        assert_eq!(s, hex);
     }
 
     #[test]

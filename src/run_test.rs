@@ -1,11 +1,15 @@
 extern crate decimal;
 
 use decimal::*;
-use std::fmt;
+use std::fmt::{self, Debug, Display, LowerHex, LowerExp};
+use std::str::FromStr;
 use std::fs::File;
 use std::path::Path;
 use std::io::BufRead;
 use std::io::BufReader;
+
+const TEST_D128: bool = true;
+const TEST_D64: bool = true;
 
 fn find_end_quote(s: &str, quote: char) -> Option<usize> {
     match s.find(quote) {
@@ -82,7 +86,7 @@ enum Directive<'a> {
     Test(&'a str),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum Op<'a> {
     Abs(&'a str),
     Add(&'a str, &'a str),
@@ -137,7 +141,7 @@ enum Op<'a> {
     Xor(&'a str, &'a str),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Test<'a> {
     raw: &'a str,
     id: &'a str,
@@ -374,9 +378,16 @@ fn read_test(path: &Path) {
                     env.process_directive(path, directive);
                 }
                 Instr::Test(test) => {
-                    let result = run_test(&env, test);
-                    summary.add(&result);
-                    println!("{}", result);
+                    if TEST_D128 {
+                        let result = run_test(&env, test.clone());
+                        println!("[d128] {}", result);
+                        summary.add(&result);
+                    }
+                    if TEST_D64 {
+                        let result = run_test_d64(&env, test);
+                        println!("[d64 ] {}", result);
+                        summary.add(&result);
+                    }
                 }
             }
         }
@@ -419,16 +430,9 @@ impl<'a> fmt::Display for TestResult<'a> {
     }
 }
 
-fn parse_operand(s: &str) -> d128 {
-    if s.chars().nth(0) == Some('#') {
-        d128::from_hex(&s[1..])
-    } else {
-        use std::str::FromStr;
-        d128::from_str(s).expect("Invalid decimal")
-    }
-}
-
-fn format_result<'a>(value: d128, test: &Test<'a>) -> String {
+fn format_result<'a, T>(value: T, test: &Test<'a>) -> String
+    where T: Display + LowerHex + LowerExp
+{
     if test.expected_value.chars().nth(0) == Some('#') {
         format!("#{:x}", value)
     } else if let Op::ToEng(..) = test.op {
@@ -438,14 +442,40 @@ fn format_result<'a>(value: d128, test: &Test<'a>) -> String {
     }
 }
 
+trait FromHex {
+    fn from_hex(_: &str) -> Self;
+}
+
+impl FromHex for d128 {
+    fn from_hex(s: &str) -> Self { d128::from_hex(s) }
+}
+
+impl FromHex for d64 {
+    fn from_hex(s: &str) -> Self { d64::from_hex(s) }
+}
+
+fn parse_operand<T, E>(s: &str) -> T
+    where T: FromHex + FromStr<Err = E>,
+          E: Debug
+{
+    if s.chars().nth(0) == Some('#') {
+        T::from_hex(&s[1..])
+    } else {
+        use std::str::FromStr;
+        T::from_str(s).expect("Invalid decimal")
+    }
+}
+
 macro_rules! simple_op {
-    ($test:ident, $res:ident = $func:ident($($arg:ident),+)) => {
+    ($d:ident, $test:ident, $res:ident = $func:ident($($arg:ident),+)) => {
         {
+            type D = $d;
+
             $(
                 if $arg == "#" { return TestResult::Ignored($test); }
-                let $arg = parse_operand($arg);
+                let $arg: D = parse_operand($arg);
             )+
-            $res = format_result(d128::$func($($arg),+), &$test);
+            $res = format_result(D::$func($($arg),+), &$test);
         }
     };
 }
@@ -470,61 +500,61 @@ fn run_test<'a>(env: &Environment, test: Test<'a>) -> TestResult<'a> {
     let status: Status;
     d128::set_status(Status::empty());
     match test.op {
-        Op::Abs(a) => simple_op!(test, value = abs(a)),
-        Op::Add(a, b) => simple_op!(test, value = add(a, b)),
-        Op::And(a, b) => simple_op!(test, value = bitand(a, b)),
+        Op::Abs(a) => simple_op!(d128, test, value = abs(a)),
+        Op::Add(a, b) => simple_op!(d128, test, value = add(a, b)),
+        Op::And(a, b) => simple_op!(d128, test, value = bitand(a, b)),
         Op::Apply(a) => {
             if a == "#" {
                 return TestResult::Ignored(test);
             }
-            value = format_result(parse_operand(a), &test);
+            value = format_result(parse_operand::<d128, ()>(a), &test);
         }
-        Op::Canonical(a) => simple_op!(test, value = canonical(a)),
+        Op::Canonical(a) => simple_op!(d128, test, value = canonical(a)),
         Op::Compare(a, b) => {
             if a == "#" || b == "#" {
                 return TestResult::Ignored(test);
             }
-            value = format_result(d128::compare(&parse_operand(a), &parse_operand(b)), &test);
+            value = format_result(d128::compare(&parse_operand(a), &parse_operand::<d128, ()>(b)), &test);
         }
         Op::CompareTotal(a, b) => {
             if a == "#" || b == "#" {
                 return TestResult::Ignored(test);
             }
-            value = format_result(d128::compare_total(&parse_operand(a), &parse_operand(b)),
+            value = format_result(d128::compare_total(&parse_operand(a), &parse_operand::<d128, ()>(b)),
                                   &test);
         }
-        Op::Divide(a, b) => simple_op!(test, value = div(a, b)),
-        Op::Fma(a, b, c) => simple_op!(test, value = mul_add(a, b, c)),
-        Op::Invert(a) => simple_op!(test, value = not(a)),
-        Op::LogB(a) => simple_op!(test, value = logb(a)),
-        Op::Max(a, b) => simple_op!(test, value = max(a, b)),
-        Op::Min(a, b) => simple_op!(test, value = min(a, b)),
-        Op::Minus(a) => simple_op!(test, value = neg(a)),
-        Op::Multiply(a, b) => simple_op!(test, value = mul(a, b)),
-        Op::NextMinus(a) => simple_op!(test, value = previous(a)),
-        Op::NextPlus(a) => simple_op!(test, value = next(a)),
-        Op::NextToward(a, b) => simple_op!(test, value = towards(a, b)),
-        Op::Or(a, b) => simple_op!(test, value = bitor(a, b)),
-        Op::Power(a, b) => simple_op!(test, value = pow(a, b)),
-        Op::Quantize(a, b) => simple_op!(test, value = quantize(a, b)),
-        Op::Reduce(a) => simple_op!(test, value = reduce(a)),
-        Op::Remainder(a, b) => simple_op!(test, value = rem(a, b)),
-        Op::Rotate(a, b) => simple_op!(test, value = rotate(a, b)),
-        Op::ScaleB(a, b) => simple_op!(test, value = scaleb(a, b)),
-        Op::Subtract(a, b) => simple_op!(test, value = sub(a, b)),
+        Op::Divide(a, b) => simple_op!(d128, test, value = div(a, b)),
+        Op::Fma(a, b, c) => simple_op!(d128, test, value = mul_add(a, b, c)),
+        Op::Invert(a) => simple_op!(d128, test, value = not(a)),
+        Op::LogB(a) => simple_op!(d128, test, value = logb(a)),
+        Op::Max(a, b) => simple_op!(d128, test, value = max(a, b)),
+        Op::Min(a, b) => simple_op!(d128, test, value = min(a, b)),
+        Op::Minus(a) => simple_op!(d128, test, value = neg(a)),
+        Op::Multiply(a, b) => simple_op!(d128, test, value = mul(a, b)),
+        Op::NextMinus(a) => simple_op!(d128, test, value = previous(a)),
+        Op::NextPlus(a) => simple_op!(d128, test, value = next(a)),
+        Op::NextToward(a, b) => simple_op!(d128, test, value = towards(a, b)),
+        Op::Or(a, b) => simple_op!(d128, test, value = bitor(a, b)),
+        Op::Power(a, b) => simple_op!(d128, test, value = pow(a, b)),
+        Op::Quantize(a, b) => simple_op!(d128, test, value = quantize(a, b)),
+        Op::Reduce(a) => simple_op!(d128, test, value = reduce(a)),
+        Op::Remainder(a, b) => simple_op!(d128, test, value = rem(a, b)),
+        Op::Rotate(a, b) => simple_op!(d128, test, value = rotate(a, b)),
+        Op::ScaleB(a, b) => simple_op!(d128, test, value = scaleb(a, b)),
+        Op::Subtract(a, b) => simple_op!(d128, test, value = sub(a, b)),
         Op::ToEng(a) => {
             if a == "#" {
                 return TestResult::Ignored(test);
             }
-            value = format_result(parse_operand(a), &test);
+            value = format_result(parse_operand::<d128, ()>(a), &test);
         }
         Op::ToSci(a) => {
             if a == "#" {
                 return TestResult::Ignored(test);
             }
-            value = format_result(parse_operand(a), &test);
+            value = format_result(parse_operand::<d128, ()>(a), &test);
         }
-        Op::Xor(a, b) => simple_op!(test, value = bitxor(a, b)),
+        Op::Xor(a, b) => simple_op!(d128, test, value = bitxor(a, b)),
         _ => {
             return TestResult::Ignored(test);
         }
@@ -537,7 +567,96 @@ fn run_test<'a>(env: &Environment, test: Test<'a>) -> TestResult<'a> {
     }
 }
 
+fn run_test_d64<'a>(env: &Environment, test: Test<'a>) -> TestResult<'a> {
+    use std::ops::*;
+
+    let d64_env = Environment {
+        precision: Some(16),
+        rounding: Some(Rounding::HalfEven),
+        max_exponent: Some(384),
+        min_exponent: Some(-383),
+        extended: true,
+        clamp: true,
+    };
+
+    if *env != d64_env {
+        return TestResult::Ignored(test);
+    }
+
+    let value: String;
+    let status: Status;
+    d64::set_status(Status::empty());
+    match test.op {
+        Op::Abs(a) => simple_op!(d64, test, value = abs(a)),
+        Op::Add(a, b) => simple_op!(d64, test, value = add(a, b)),
+        Op::And(a, b) => simple_op!(d64, test, value = bitand(a, b)),
+        Op::Apply(a) => {
+            if a == "#" {
+                return TestResult::Ignored(test);
+            }
+            value = format_result(parse_operand::<d64, ()>(a), &test);
+        }
+        Op::Canonical(a) => simple_op!(d64, test, value = canonical(a)),
+        Op::Compare(a, b) => {
+            if a == "#" || b == "#" {
+                return TestResult::Ignored(test);
+            }
+            value = format_result(d64::compare(&parse_operand(a), &parse_operand::<d64, ()>(b)), &test);
+        }
+        Op::CompareTotal(a, b) => {
+            if a == "#" || b == "#" {
+                return TestResult::Ignored(test);
+            }
+            value = format_result(d64::compare_total(&parse_operand(a), &parse_operand::<d64, ()>(b)),
+                                  &test);
+        }
+        Op::Divide(a, b) => simple_op!(d64, test, value = div(a, b)),
+        Op::Fma(a, b, c) => simple_op!(d64, test, value = mul_add(a, b, c)),
+        Op::Invert(a) => simple_op!(d64, test, value = not(a)),
+        Op::LogB(a) => simple_op!(d64, test, value = logb(a)),
+        Op::Max(a, b) => simple_op!(d64, test, value = max(a, b)),
+        Op::Min(a, b) => simple_op!(d64, test, value = min(a, b)),
+        Op::Minus(a) => simple_op!(d64, test, value = neg(a)),
+        Op::Multiply(a, b) => simple_op!(d64, test, value = mul(a, b)),
+        Op::NextMinus(a) => simple_op!(d64, test, value = previous(a)),
+        Op::NextPlus(a) => simple_op!(d64, test, value = next(a)),
+        Op::NextToward(a, b) => simple_op!(d64, test, value = towards(a, b)),
+        Op::Or(a, b) => simple_op!(d64, test, value = bitor(a, b)),
+        Op::Power(a, b) => simple_op!(d64, test, value = pow(a, b)),
+        Op::Quantize(a, b) => simple_op!(d64, test, value = quantize(a, b)),
+        Op::Reduce(a) => simple_op!(d64, test, value = reduce(a)),
+        Op::Remainder(a, b) => simple_op!(d64, test, value = rem(a, b)),
+        Op::Rotate(a, b) => simple_op!(d64, test, value = rotate(a, b)),
+        Op::ScaleB(a, b) => simple_op!(d64, test, value = scaleb(a, b)),
+        Op::Subtract(a, b) => simple_op!(d64, test, value = sub(a, b)),
+        Op::ToEng(a) => {
+            if a == "#" {
+                return TestResult::Ignored(test);
+            }
+            value = format_result(parse_operand::<d64, ()>(a), &test);
+        }
+        Op::ToSci(a) => {
+            if a == "#" {
+                return TestResult::Ignored(test);
+            }
+            value = format_result(parse_operand::<d64, ()>(a), &test);
+        }
+        Op::Xor(a, b) => simple_op!(d64, test, value = bitxor(a, b)),
+        _ => {
+            return TestResult::Ignored(test);
+        }
+    }
+    status = d64::get_status();
+    if value == test.expected_value && status == test.expected_status {
+        TestResult::Pass(test)
+    } else {
+        TestResult::Fail(test, value, status)
+    }
+}
+
 fn main() {
+    println!("testing d128: {}", TEST_D128);
+    println!("testing  d64: {}", TEST_D64);
     let filepath = std::env::args().nth(1).expect("Filename to test");
     let path = Path::new(&filepath);
     read_test(path);
