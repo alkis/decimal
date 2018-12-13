@@ -2,7 +2,7 @@ use super::Class;
 use super::Status;
 use super::Rounding;
 
-use context::*;
+use crate::context::*;
 use libc::{c_char, int32_t, uint8_t, uint32_t};
 #[cfg(feature = "ord_subset")]
 use ord_subset;
@@ -26,7 +26,7 @@ use std::ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Div, DivAssign, R
                ShlAssign, Shr, ShrAssign, Deref};
 use std::str::FromStr;
 use std::str::from_utf8_unchecked;
-use d128;
+use crate::d128;
 
 thread_local!(static CTX: RefCell<Context> = RefCell::new(d64::default_context()));
 thread_local!(static ROUND_DOWN: RefCell<Context> = RefCell::new(d64::with_rounding(Rounding::Down)));
@@ -75,7 +75,7 @@ impl Into<ord_subset::OrdVar<d64>> for d64 {
 #[cfg(feature = "rustc-serialize")]
 impl Decodable for d64 {
     fn decode<D: Decoder>(d: &mut D) -> Result<Self, D::Error> {
-        let s = try!(d.read_str());
+        let s = r#try!(d.read_str());
         Ok(Self::from_str(&s).expect("unreachable"))
     }
 }
@@ -273,7 +273,7 @@ impl fmt::LowerExp for d64 {
 impl fmt::LowerHex for d64 {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         for b in self.bytes.iter().rev() {
-            try!(write!(fmt, "{:02x}", b));
+            r#try!(write!(fmt, "{:02x}", b));
         }
         Ok(())
     }

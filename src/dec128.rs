@@ -2,7 +2,7 @@ use super::Class;
 use super::Status;
 use super::Rounding;
 
-use context::*;
+use crate::context::*;
 use libc::{c_char, int32_t, uint8_t, uint32_t};
 #[cfg(feature = "ord_subset")]
 use ord_subset;
@@ -74,7 +74,7 @@ impl From<d128> for ord_subset::OrdVar<d128> {
 #[cfg(feature = "rustc-serialize")]
 impl Decodable for d128 {
     fn decode<D: Decoder>(d: &mut D) -> Result<Self, D::Error> {
-        let s = try!(d.read_str());
+        let s = r#try!(d.read_str());
         Ok(Self::from_str(&s).expect("unreachable"))
     }
 }
@@ -501,7 +501,7 @@ impl fmt::LowerExp for d128 {
 impl fmt::LowerHex for d128 {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         for b in self.bytes.iter().rev() {
-            try!(write!(fmt, "{:02x}", b));
+            r#try!(write!(fmt, "{:02x}", b));
         }
         Ok(())
     }
