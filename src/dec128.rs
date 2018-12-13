@@ -782,7 +782,9 @@ impl d128 {
     /// at the cost of precision. Precision loss is much worse for larger numbers.
     /// For the range `(-1000, 1000)` this approach is tested to return within
     /// `1e-4` of the original value.
-    #[deprecated(since="2.1.6")]
+    #[deprecated(since="2.1.6", note="`d128!(..)` macro now unavailable inside crate, \
+                                      so this implementation is forced to use \
+                                      `d128::from_str`, which is slow")]
     #[inline]
     pub fn from_f64_lossy(x: f64) -> d128 {
         d128::from((x * 1e8) as i64) * d128::from_str("1e-8").unwrap()
@@ -793,7 +795,9 @@ impl d128 {
     /// at the cost of precision. Precision loss is much worse for larger numbers.
     /// For the range `(-1000, 1000)` this approach is tested to return within
     /// `1e-4` of the original value.
-    #[deprecated(since="2.1.6")]
+    #[deprecated(since="2.1.6", note="`d128!(..)` macro now unavailable inside crate, \
+                                      so this implementation is forced to use \
+                                      `d128::from_str`, which is slow")]
     #[inline]
     pub fn from_f32_lossy(x: f32) -> d128 {
         d128::from((x * 1e8) as i64) * d128::from_str("1e-8").unwrap()
