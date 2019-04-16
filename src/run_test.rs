@@ -1,3 +1,6 @@
+#![allow(unused)]
+#![allow(deprecated)]
+
 extern crate decimal;
 
 use decimal::*;
