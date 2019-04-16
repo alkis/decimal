@@ -4,7 +4,8 @@ use std::str::FromStr;
 
 fn main() {
     let args: clap::ArgMatches = clap::App::new("bytes")
-        .version("0.1")
+        .version("0.1.1")
+        .setting(clap::AppSettings::AllowLeadingHyphen)
         .arg(clap::Arg::with_name("dec_literal")
              .help("Decimal float literal to show bytes for")
              .required(true))
