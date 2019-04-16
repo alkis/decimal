@@ -765,6 +765,7 @@ impl d128 {
     }
 
     /// Creates a d128 from raw bytes. Endianess is host dependent.
+    #[cfg(target_endian = "little")]
     pub const fn from_raw_bytes(bytes: [u8; 16]) -> d128 {
         d128 { bytes }
     }
@@ -853,15 +854,15 @@ impl d128 {
     }
 
     /// Returns the d128 representing +Infinity.
-    #[deprecated(since="2.1.6")]
-    pub fn infinity() -> d128 {
-        d128::from_str("Infinity").unwrap()
+    #[cfg(target_endian = "little")]
+    pub const fn infinity() -> d128 {
+        d128::from_raw_bytes([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 120])
     }
 
     /// Returns the d128 representing -Infinity.
-    #[deprecated(since="2.1.6")]
-    pub fn neg_infinity() -> d128 {
-        d128::from_str("-Infinity").unwrap()
+    #[cfg(target_endian = "little")]
+    pub const fn neg_infinity() -> d128 {
+        d128::from_raw_bytes([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 248])
     }
 
     // Computational.
