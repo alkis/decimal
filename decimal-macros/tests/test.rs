@@ -1,18 +1,12 @@
 #![feature(proc_macro_hygiene)]
 #![feature(const_fn)]
-#![feature(const_let)]
+#![allow(unused)]
 
 extern crate decimal_macros;
 extern crate decimal;
 
 use decimal::d128;
 use decimal_macros::*;
-
-fn f(x: i32) -> i32 { x * 2 }
-
-macro_rules! f {
-    ($x:expr) => { x * 2 }
-}
 
 #[test]
 fn basic_plugin_sanity_checks() {

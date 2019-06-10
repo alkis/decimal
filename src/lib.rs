@@ -1,5 +1,6 @@
 #![feature(const_fn)]
 #![cfg_attr(test, feature(test))]
+#![allow(deprecated)]
 
 #[macro_use]
 extern crate bitflags;
