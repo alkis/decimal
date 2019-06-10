@@ -125,7 +125,6 @@ mod d128_lit {
                         }
                     };
 
-                    //let num = unsafe { ::std::mem::transmute::<d128, [u8; 16]>(num) };
                     let num = num.as_bytes();
 
                     // Create array literal
@@ -207,7 +206,8 @@ mod d64_lit {
                             return DummyResult::any(sp);
                         }
                     };
-                    let num = unsafe { ::std::mem::transmute::<d64, [u8; 8]>(num) };
+
+                    let num = num.as_bytes();
 
                     // Create array literal
                     let mut vec = Vec::new();
