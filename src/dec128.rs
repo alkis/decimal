@@ -275,7 +275,7 @@ impl From<d128> for u128 {
         const ONE: d128 = d128::from_raw_bytes([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 34]);
         debug_assert_eq!(ONE, d128::from_str("1").unwrap());
         match val.digits() {
-            x @ 0 ... 33 => {
+            x @ 0 ..= 33 => {
                 n = x as usize;
                 r = val;
             }
@@ -1260,7 +1260,7 @@ impl slog::Value for d128 {
         &self,
         _record: &slog::Record,
         key: slog::Key,
-        serializer: &mut slog::Serializer,
+        serializer: &mut dyn slog::Serializer,
     ) -> Result<(), slog::Error> {
         serializer.emit_arguments(key, &format_args!("{}", self))
     }

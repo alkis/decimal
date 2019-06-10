@@ -973,7 +973,7 @@ impl slog::Value for d64 {
         &self,
         _record: &slog::Record,
         key: slog::Key,
-        serializer: &mut slog::Serializer,
+        serializer: &mut dyn slog::Serializer,
     ) -> Result<(), slog::Error> {
         serializer.emit_arguments(key, &format_args!("{}", self))
     }
