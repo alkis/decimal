@@ -1155,7 +1155,9 @@ mod tests {
     macro_rules! d64 {
         ($lit:expr) => {{
             use std::str::FromStr;
-            $crate::d64::from_str(stringify!($lit)).expect("Invalid decimal float literal")
+            let lit = stringify!($lit);
+            let clean: String = lit.replace("_", "");
+            $crate::d64::from_str(&clean).expect("Invalid decimal float literal")
         }}
     }
 
