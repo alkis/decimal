@@ -1,5 +1,5 @@
-#![feature(const_fn)]
-#![cfg_attr(test, feature(test))]
+#![cfg_attr(feature = "nightly", feature(const_fn))]
+#![cfg_attr(all(feature = "nightly", test), feature(test))]
 #![allow(deprecated)]
 
 #[macro_use]
@@ -16,7 +16,7 @@ extern crate serde;
 extern crate serde_json;
 #[cfg(test)]
 extern crate rand;
-#[cfg(test)]
+#[cfg(all(test, feature = "nightly"))]
 extern crate test;
 #[cfg(feature = "faster")]
 extern crate faster;
@@ -70,24 +70,6 @@ bitflags! {
     /// specific points to check the validity of the computation. Each thread gets its own status.
     /// The status is initially empty.
     ///
-    /// # Examples
-    ///
-    /// ```
-    /// # #![feature(proc_macro_hygiene)]
-    /// # extern crate decimal_macros;
-    /// # extern crate decimal;
-    /// # use decimal_macros::*;
-    /// # use decimal::d128;
-    /// # use decimal::Status;
-    /// # fn main() {
-    /// assert_eq!(d128::get_status(), Status::empty());
-    /// let _ = d128!(1) / &d128!(0);
-    /// assert!(d128::get_status().contains(decimal::Status::DIVISION_BY_ZERO));
-    /// let _ = d128!(0) / &d128!(0);
-    /// assert!(d128::get_status().contains(decimal::Status::DIVISION_UNDEFINED));
-    /// // The previous status flag was not cleared!
-    /// assert!(d128::get_status().contains(decimal::Status::DIVISION_BY_ZERO));
-    /// # }
     pub struct Status: ::libc::uint32_t {
         /// Conversion syntax error.
         const CONVERSION_SYNTAX    = 0x00000001;
