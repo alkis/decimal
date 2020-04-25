@@ -470,7 +470,7 @@ fn parse_operand<T, E>(s: &str) -> T
 }
 
 macro_rules! simple_op {
-    ($d:ident, $test:ident, $res:ident = $func:ident($($arg:ident),+)) => {
+    ($d:ty, $test:ident, $res:ident = $func:ident($($arg:ident),+)) => {
         {
             type D = $d;
 

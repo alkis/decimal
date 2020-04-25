@@ -151,33 +151,37 @@ impl From<u32> for d64 {
     }
 }
 
-// /// Converts an u64 to d64. The result is exact and no error is possible.
-// impl From<u64> for d64 {
-//     fn from(mut val: u64) -> d64 {
-//         let mut bcd = [0; 34];
-//         let mut i = 33;
-//         while val > 0 {
-//             bcd[i] = (val % 10) as u8;
-//             val /= 10;
-//             i -= 1;
-//         }
-//         unsafe {
-//             let mut res: d64 = uninitialized();
-//             *decDoubleFromBCD(&mut res, 0, bcd.as_ptr(), 0)
-//         }
-//     }
-// }
+/// Converts an u64 to d64. The result is exact and no error is possible.
+impl From<u64> for d64 {
+    fn from(mut val: u64) -> d64 {
+        /*
+        let mut bcd = [0u8; 16];
+        let mut i = 15;
+        while val > 0 {
+            bcd[i] = (val % 10) as u8;
+            val /= 10;
+            i -= 1;
+        }
+        unsafe {
+            let mut res: d64 = uninitialized();
+            *decDoubleFromBCD(&mut res, 0, bcd.as_ptr(), 0)
+        }
+        */
+        let wider = d128::from(val);
+        d64::from(wider)
+    }
+}
 
-// /// Converts an i64 to d64. The result is exact and no error is possible.
-// impl From<i64> for d64 {
-//     fn from(val: i64) -> d64 {
-//         if val < 0 {
-//             -d64::from(!(val as u64) + 1)
-//         } else {
-//             d64::from(val as u64)
-//         }
-//     }
-// }
+/// Converts an i64 to d64. The result is exact and no error is possible.
+impl From<i64> for d64 {
+    fn from(val: i64) -> d64 {
+        if val < 0 {
+            -d64::from(!(val as u64) + 1)
+        } else {
+            d64::from(val as u64)
+        }
+    }
+}
 
 impl AsRef<d64> for d64 {
     fn as_ref(&self) -> &d64 {
@@ -993,7 +997,7 @@ extern "C" {
     fn decContextDefault(ctx: *mut Context, kind: uint32_t) -> *mut Context;
     fn decContextSetRounding(ctx: *mut Context, rounding: uint32_t);
     // Utilities and conversions, extractors, etc.
-    // fn decDoubleFromBCD(res: *mut d64, exp: i32, bcd: *const u8, sign: i32) -> *mut d64;
+    //fn decDoubleFromBCD(res: *mut d64, exp: i32, bcd: *const u8, sign: i32) -> *mut d64;
     fn decDoubleFromInt32(res: *mut d64, src: int32_t) -> *mut d64;
     fn decDoubleFromString(res: *mut d64, s: *const c_char, ctx: *mut Context) -> *mut d64;
     fn decDoubleFromUInt32(res: *mut d64, src: uint32_t) -> *mut d64;
@@ -1405,23 +1409,23 @@ mod tests {
         assert_eq!(d64!(1.1), d64!(1.1).min(&d64!(2.2)));
     }
 
-    // #[test]
-    // fn from_i64() {
-    //     assert_eq!(d64::from_str(&::std::i64::MAX.to_string()).unwrap(),
-    //                d64::from(::std::i64::MAX));
-    //     assert_eq!(d64::from(0i32), d64::from(0i64));
-    //     assert_eq!(d64::from_str(&(::std::i64::MIN).to_string()).unwrap(),
-    //                d64::from(::std::i64::MIN));
-    // }
+    #[test]
+    fn from_i64() {
+        assert_eq!(d64::from_str(&::std::i64::MAX.to_string()).unwrap(),
+                   d64::from(::std::i64::MAX));
+        assert_eq!(d64::from(0i32), d64::from(0i64));
+        assert_eq!(d64::from_str(&(::std::i64::MIN).to_string()).unwrap(),
+                   d64::from(::std::i64::MIN));
+    }
 
-    // #[test]
-    // fn from_u64() {
-    //     assert_eq!(d64::from_str(&::std::u64::MAX.to_string()).unwrap(),
-    //                d64::from(::std::u64::MAX));
-    //     assert_eq!(d64::from(0i32), d64::from(0u64));
-    //     assert_eq!(d64::from_str(&(::std::u64::MIN).to_string()).unwrap(),
-    //                d64::from(::std::u64::MIN));
-    // }
+    #[test]
+    fn from_u64() {
+        assert_eq!(d64::from_str(&::std::u64::MAX.to_string()).unwrap(),
+                   d64::from(::std::u64::MAX));
+        assert_eq!(d64::from(0i32), d64::from(0u64));
+        assert_eq!(d64::from_str(&(::std::u64::MIN).to_string()).unwrap(),
+                   d64::from(::std::u64::MIN));
+    }
 
     #[test]
     fn test_sum() {
@@ -1430,5 +1434,23 @@ mod tests {
         assert_eq!(d64!(10), decimals.iter().sum());
 
         assert_eq!(d64!(10), decimals.into_iter().sum());
+    }
+
+    #[bench]
+    fn d64_via_random_u64(b: &mut Bencher) {
+        let mut rng = rand::thread_rng();
+        b.iter(|| {
+            let d: d64 = rng.gen::<u64>().into();
+            d
+        });
+    }
+
+    #[bench]
+    fn d64_via_random_i64(b: &mut Bencher) {
+        let mut rng = rand::thread_rng();
+        b.iter(|| {
+            let d: d64 = rng.gen::<i64>().into();
+            d
+        });
     }
 }

@@ -1911,10 +1911,19 @@ mod tests {
     }
 
     #[bench]
-    fn random_number_via_u64(b: &mut Bencher) {
+    fn d128_via_random_u64(b: &mut Bencher) {
         let mut rng = rand::thread_rng();
         b.iter(|| {
             let d: d128 = rng.gen::<u64>().into();
+            d
+        });
+    }
+
+    #[bench]
+    fn d128_via_random_i64(b: &mut Bencher) {
+        let mut rng = rand::thread_rng();
+        b.iter(|| {
+            let d: d128 = rng.gen::<i64>().into();
             d
         });
     }
