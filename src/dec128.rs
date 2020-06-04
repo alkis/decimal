@@ -151,6 +151,12 @@ impl From<u32> for d128 {
     }
 }
 
+impl From<f64> for d128 {
+    fn from(x: f64) -> d128 {
+        d128::from_str(&format!("{}", x)).unwrap()
+    }
+}
+
 impl From<d128> for f64 {
     #[inline]
     fn from(x: d128) -> Self {
@@ -1453,6 +1459,38 @@ mod tests {
         assert_relative_eq!(a, f32::from(d128!(1.23456789)), epsilon = 1e-6f32);
         let a = 4000.2340293842;
         assert_relative_eq!(a, f32::from(d128!(4000.2340293842)), epsilon = 1e-6f32);
+    }
+
+    #[test]
+    fn verify_from_f64_for_d128_behaves_well() {
+        let test = |x: &str| {
+                let a: f64 = f64::from_str(x).unwrap();
+                let b: d128 = d128::from_str(x).unwrap();
+                let c = d128::from(a);
+                let epsilon = d128!(1e-6);
+                assert!((b - c).abs() < epsilon, "b={}, c={}, b-c={}", b, c, b-c);
+        };
+
+        test("1.23456789");
+        test("4000.2340293842");
+        test("0.0");
+        test("1.0");
+        test("3.14159274101257324219");
+        test("-1.23456789");
+        test("-4000.2340293842");
+        test("-1.0");
+        test("-3.14159274101257324219");
+        assert!(d128::from(f64::NAN).is_nan());
+        assert!(d128::from(f64::INFINITY).is_infinite());
+        assert!(d128::from(f64::NEG_INFINITY).is_negative());
+        assert!(d128::from(f64::NEG_INFINITY).is_infinite());
+        assert_eq!(d128::from(f64::NEG_INFINITY).as_bytes(), d128::neg_infinity().as_bytes());
+    }
+
+    #[bench]
+    fn bench_from_f64_via_string_conversion(b: &mut Bencher) {
+        let x = 1.23456789f64;
+        b.iter(|| d128::from(x));
     }
 
     #[bench]
