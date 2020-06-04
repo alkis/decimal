@@ -203,13 +203,12 @@ impl From<d128> for f32 {
 ///
 /// # Examples
 /// ```
-/// #![feature(proc_macro_hygiene)]
 /// extern crate decimal;
-/// extern crate decimal_macros;
-/// use decimal_macros::*;
+/// use decimal::d128;
+/// use std::str::FromStr;
 ///
 /// fn main() {
-///     let x = d128!(12345);
+///     let x = d128::from_str("12345").unwrap();
 ///     assert_eq!(u64::from(x), 12345u64);
 /// }
 /// ```
@@ -262,13 +261,12 @@ impl From<d128> for u64 {
 ///
 /// # Examples
 /// ```
-/// #![feature(proc_macro_hygiene)]
 /// extern crate decimal;
-/// extern crate decimal_macros;
-/// use decimal_macros::*;
+/// use decimal::d128;
+/// use std::str::FromStr;
 ///
 /// fn main() {
-///     let x = d128!(12345);
+///     let x = d128::from_str("12345").unwrap();
 ///     assert_eq!(u128::from(x), 12345u128);
 /// }
 /// ```
@@ -355,30 +353,28 @@ impl From<u64> for d128 {
 ///
 /// # Examples
 /// ```
-/// #![feature(proc_macro_hygiene)]
 /// extern crate decimal;
-/// extern crate decimal_macros;
-/// use decimal_macros::*;
 /// use decimal::d128;
+/// use std::str::FromStr;
 ///
 /// fn main() {
-///     let a: u128 = 12345;
-///     assert_eq!(d128::from(a), d128!(12345));
+///     let a = d128::from_str("12345").unwrap();
+///     assert_eq!(d128::from(a), a);
 ///
 ///     let b: u128 = 340282366920938463463374607431768211455;
-///     assert_eq!(d128::from(b), d128!(340282366920938463463374607431768211455));
+///     assert_eq!(d128::from(b), d128::from_str("340282366920938463463374607431768211455").unwrap());
 ///
 ///     let c: u128 = 999_999_999_999_999_999_999_999_999_999_999;
-///     assert_eq!(d128::from(c), d128!(999999999999999999999999999999999));
+///     assert_eq!(d128::from(c), d128::from_str("999999999999999999999999999999999").unwrap());
 ///
 ///     let d: u128 = 9_999_999_999_999_999_999_999_999_999_999_999;
-///     assert_eq!(d128::from(d), d128!(9999999999999999999999999999999999));
+///     assert_eq!(d128::from(d), d128::from_str("9999999999999999999999999999999999").unwrap());
 ///
 ///     let e: u128 = 98_999_999_999_999_999_999_999_999_999_999_999;
-///     assert_eq!(d128::from(e), d128!(98999999999999999999999999999999999));
+///     assert_eq!(d128::from(e), d128::from_str("98999999999999999999999999999999999").unwrap());
 ///
 ///     let f: u128 = 10_000_000_000_000_000_000_000_000_000_000_000;
-///     assert_eq!(d128::from(f), d128!(10000000000000000000000000000000000));
+///     assert_eq!(d128::from(f), d128::from_str("10000000000000000000000000000000000").unwrap());
 /// }
 /// ```
 impl From<u128> for d128 {
@@ -786,6 +782,7 @@ impl d128 {
 
     /// For benchmark comparisons.
     ///
+    #[allow(dead_code)]
     #[cfg(test)]
     #[inline]
     fn baseline_from_f64_lossy(x: f64) -> d128 {
@@ -1007,65 +1004,16 @@ impl d128 {
     /// the same value but rounded or padded if necessary to have the same exponent as `other`, for
     /// example to round a monetary quantity to cents).
     ///
-    /// # Examples
-    ///
-    /// ```
-    /// #![feature(proc_macro_hygiene)]
-    /// extern crate decimal;
-    /// extern crate decimal_macros;
-    /// use decimal_macros::*;
-    ///
-    /// fn main() {
-    ///     let prec = d128!(0.1);
-    ///     assert_eq!(d128!(0.400012342423).quantize(prec), d128!(0.4));
-    ///     // uses default rounding (half even)
-    ///     assert_eq!(d128!(0.05).quantize(prec), d128!(0.0));
-    ///     assert_eq!(d128!(0.15).quantize(prec), d128!(0.2));
-    /// }
-    /// ```
     pub fn quantize<O: AsRef<d128>>(mut self, other: O) -> d128 {
         d128::with_context(|ctx| unsafe { *decQuadQuantize(&mut self, &self, other.as_ref(), ctx) })
     }
 
     /// Like `quantize`, but uses `Rounding::Down`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// #![feature(proc_macro_hygiene)]
-    /// extern crate decimal;
-    /// extern crate decimal_macros;
-    /// use decimal_macros::*;
-    ///
-    /// fn main() {
-    ///     let prec = d128!(0.1);
-    ///     assert_eq!(d128!(0.05).truncate(prec), d128!(0.0));
-    ///     assert_eq!(d128!(0.15).truncate(prec), d128!(0.1));
-    ///     assert_eq!(d128!(0.19).truncate(prec), d128!(0.1));
-    /// }
-    /// ```
     pub fn truncate<O: AsRef<d128>>(mut self, other: O) -> d128 {
         d128::with_round_down(|ctx| unsafe { *decQuadQuantize(&mut self, &self, other.as_ref(), ctx) })
     }
 
     /// Like `quantize`, but uses `Rounding::HalfUp`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// #![feature(proc_macro_hygiene)]
-    /// extern crate decimal;
-    /// extern crate decimal_macros;
-    /// use decimal_macros::*;
-    ///
-    /// fn main() {
-    ///     let prec = d128!(0.1);
-    ///     assert_eq!(d128!(0.15).round(prec), d128!(0.2));
-    ///     assert_eq!(d128!(0.14999999999).round(prec), d128!(0.1));
-    ///     assert_eq!(d128!(0.19).round(prec), d128!(0.2));
-    ///     assert_eq!(d128!(0.05).round(prec), d128!(0.1));
-    /// }
-    /// ```
     pub fn round<O: AsRef<d128>>(mut self, other: O) -> d128 {
         d128::with_half_up(|ctx| unsafe { *decQuadQuantize(&mut self, &self, other.as_ref(), ctx) })
     }
@@ -1085,20 +1033,6 @@ impl d128 {
     /// finite integer (with exponent=0) in the range -34 through +34. NaNs are propagated as
     /// usual. If `self` is infinite the result is Infinity of the same sign. No status is set
     /// unless `amount` is invalid or an operand is an sNaN.
-    ///
-    /// # Examples
-    /// ```
-    /// #![feature(proc_macro_hygiene)]
-    /// extern crate decimal;
-    /// extern crate decimal_macros;
-    /// use decimal_macros::*;
-    ///
-    /// fn main() {
-    ///     let x = d128!(1.2345);
-    ///     let one = d128!(1);
-    ///     assert_eq!(x.rotate(one), d128!(12.345));
-    /// }
-    /// ```
     pub fn rotate<O: AsRef<d128>>(mut self, amount: O) -> d128 {
         d128::with_context(|ctx| unsafe { *decQuadRotate(&mut self, &self, amount.as_ref(), ctx) })
     }
@@ -1424,6 +1358,7 @@ mod tests {
     use rand::{self, Rng};
     use rand::distributions::{IndependentSample, Range};
 
+    #[cfg(feature = "nightly")]
     #[allow(unused_imports)]
     use test::{black_box, Bencher};
 
@@ -1461,6 +1396,7 @@ mod tests {
         assert_relative_eq!(a, f32::from(d128!(4000.2340293842)), epsilon = 1e-6f32);
     }
 
+<<<<<<< HEAD
     #[test]
     fn verify_from_f64_for_d128_behaves_well() {
         let test = |x: &str| {
@@ -1493,30 +1429,37 @@ mod tests {
         b.iter(|| d128::from(x));
     }
 
+=======
+    #[cfg(feature = "nightly")]
+>>>>>>> 88e2fc3db7968ee27454751f3840a85d0142bc60
     #[bench]
     fn bench_d128_to_f64_small(b: &mut Bencher) {
         let x = d128!(1.23456789);
         b.iter(|| f64::from(x));
     }
 
+    #[cfg(feature = "nightly")]
     #[bench]
     fn bench_d128_to_f64_larger(b: &mut Bencher) {
         let x = d128!(4000.2340293842);
         b.iter(|| f64::from(x));
     }
 
+    #[cfg(feature = "nightly")]
     #[bench]
     fn bench_d128_to_f32_small(b: &mut Bencher) {
         let x = d128!(1.23456789);
         b.iter(|| f32::from(x));
     }
 
+    #[cfg(feature = "nightly")]
     #[bench]
     fn bench_d128_to_f32_larger(b: &mut Bencher) {
         let x = d128!(4000.2340293842);
         b.iter(|| f32::from(x));
     }
 
+    #[cfg(feature = "nightly")]
     #[bench]
     fn truncates_long_dec_to_int(b: &mut Bencher) {
         let d = d128!(51.55933794806056096535214001488143);
@@ -1635,6 +1578,7 @@ mod tests {
         check!(18446744073709551615);
     }
 
+    #[cfg(feature = "nightly")]
     #[bench]
     fn sums_vec_of_100_000_u64_1e8_of_float(b: &mut Bencher) {
         let x = 0.00012345f64;
@@ -1659,6 +1603,7 @@ mod tests {
     }
 
 
+    #[cfg(feature = "nightly")]
     #[cfg(feature = "faster")]
     #[bench]
     fn sums_vec_of_100_000_u64_1e8_of_float_simd(b: &mut Bencher) {
@@ -1688,6 +1633,7 @@ mod tests {
         });
     }
 
+    #[cfg(feature = "nightly")]
     #[cfg(feature = "faster")]
     #[bench]
     fn sums_vec_of_100_000_f32_simd(b: &mut Bencher) {
@@ -1705,6 +1651,7 @@ mod tests {
         });
     }
 
+    #[cfg(feature = "nightly")]
     #[bench]
     fn sums_vec_of_100_000_f32(b: &mut Bencher) {
         let x = 0.00012345f32;
@@ -1718,6 +1665,7 @@ mod tests {
         });
     }
 
+    #[cfg(feature = "nightly")]
     #[bench]
     fn sums_vec_of_100_000_f64(b: &mut Bencher) {
         let x = 0.00012345f64;
@@ -1731,6 +1679,7 @@ mod tests {
         });
     }
 
+    #[cfg(feature = "nightly")]
     #[bench]
     fn sums_vec_of_100_000_d128(b: &mut Bencher) {
         let x = d128!(0.00012345);
@@ -1744,6 +1693,7 @@ mod tests {
         });
     }
 
+    #[cfg(feature = "nightly")]
     #[bench]
     fn d128_mult_1e8_convert_u64_as_i64_mult_neg_one(b: &mut Bencher) {
         let price = d128!(6128.1234567);
@@ -1755,24 +1705,28 @@ mod tests {
         });
     }
 
+    #[cfg(feature = "nightly")]
     #[bench]
     fn d128_to_u64(b: &mut Bencher) {
         let x = d128!(12345);
         b.iter(|| u64::from(x));
     }
 
+    #[cfg(feature = "nightly")]
     #[bench]
     fn d128_to_u128(b: &mut Bencher) {
         let x = d128!(12345);
         b.iter(|| u128::from(x));
     }
 
+    #[cfg(feature = "nightly")]
     #[bench]
     fn d128_to_u128_max_digits(b: &mut Bencher) {
         let x = d128!(51.55933794806056096535214001488143);
         b.iter(|| u128::from(x));
     }
 
+    #[cfg(feature = "nightly")]
     #[bench]
     fn d128_to_u128_max_digits_preemptive_truncate(b: &mut Bencher) {
         let x = d128!(51.55933794806056096535214001488143);
@@ -1780,12 +1734,14 @@ mod tests {
         b.iter(|| u128::from(x.truncate(ONE)));
     }
 
+    #[cfg(feature = "nightly")]
     #[bench]
     fn u64_to_d128(b: &mut Bencher) {
         let x = 12345u64;
         b.iter(|| d128::from(x));
     }
 
+    #[cfg(feature = "nightly")]
     #[bench]
     fn d128_from_f32_via_u64_1e8(b: &mut Bencher) {
         let x = 1.2345f32;
@@ -1793,6 +1749,7 @@ mod tests {
             d128::from((x * 1e8) as i64) * d128!(1e-8)
         });
     }
+    #[cfg(feature = "nightly")]
     #[bench]
     fn d128_from_f32_via_u64_2_powi_27(b: &mut Bencher) {
         let x = 1.2345f32;
@@ -1802,6 +1759,7 @@ mod tests {
         });
     }
 
+    #[cfg(feature = "nightly")]
     #[bench]
     fn d128_from_f32_via_from_str(b: &mut Bencher) {
         let x = 1.2345f32;
@@ -1917,6 +1875,7 @@ mod tests {
         assert_eq!(x.max(d128!(-100)), d128!(-100));
     }
 
+    #[cfg(feature = "nightly")]
     #[bench]
     fn random_number_via_u32_range(b: &mut Bencher) {
         let mut rng = rand::thread_rng();
@@ -1939,6 +1898,7 @@ mod tests {
         assert!(d <= d128!(1.2));
     }
 
+    #[cfg(feature = "nightly")]
     #[bench]
     fn random_number_via_u32(b: &mut Bencher) {
         let mut rng = rand::thread_rng();
@@ -1948,6 +1908,7 @@ mod tests {
         });
     }
 
+    #[cfg(feature = "nightly")]
     #[bench]
     fn d128_via_random_u64(b: &mut Bencher) {
         let mut rng = rand::thread_rng();
@@ -1957,6 +1918,7 @@ mod tests {
         });
     }
 
+    #[cfg(feature = "nightly")]
     #[bench]
     fn d128_via_random_i64(b: &mut Bencher) {
         let mut rng = rand::thread_rng();
@@ -1975,6 +1937,7 @@ mod tests {
         });
     }
 
+    #[cfg(feature = "nightly")]
     #[bench]
     fn rand_0_1_via_f64(b: &mut Bencher) {
         let mut rng = rand::thread_rng();
@@ -1984,6 +1947,7 @@ mod tests {
         });
     }
 
+    #[cfg(feature = "nightly")]
     #[bench]
     fn rand_0_1_via_f32(b: &mut Bencher) {
         let mut rng = rand::thread_rng();
@@ -1993,6 +1957,7 @@ mod tests {
         });
     }
 
+    #[cfg(feature = "nightly")]
     #[bench]
     fn rand_0_1_via_u32(b: &mut Bencher) {
         let mut rng = rand::thread_rng();
@@ -2003,6 +1968,7 @@ mod tests {
         });
     }
 
+    #[cfg(feature = "nightly")]
     #[bench]
     fn rand_0_1_via_i32(b: &mut Bencher) {
         let mut rng = rand::thread_rng();
