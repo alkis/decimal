@@ -739,16 +739,66 @@ impl d64 {
     /// Returns `self` set to have the same quantum as `other`, if possible (that is, numerically
     /// the same value but rounded or padded if necessary to have the same exponent as `other`, for
     /// example to round a monetary quantity to cents).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// #![feature(proc_macro_hygiene)]
+    /// extern crate decimal;
+    /// extern crate decimal_macros;
+    /// use decimal_macros::*;
+    ///
+    /// fn main() {
+    ///     let prec = d64!(0.1);
+    ///     assert_eq!(d64!(0.400012342423).quantize(prec), d64!(0.4));
+    ///     // uses default rounding (half even)
+    ///     assert_eq!(d64!(0.05).quantize(prec), d64!(0.0));
+    ///     assert_eq!(d64!(0.15).quantize(prec), d64!(0.2));
+    /// }
+    /// ```
     pub fn quantize<O: AsRef<d64>>(mut self, other: O) -> d64 {
         d64::with_context(|ctx| unsafe { *decDoubleQuantize(&mut self, &self, other.as_ref(), ctx) })
     }
 
     /// Like `quantize`, but uses `Rounding::Down`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// #![feature(proc_macro_hygiene)]
+    /// extern crate decimal;
+    /// extern crate decimal_macros;
+    /// use decimal_macros::*;
+    ///
+    /// fn main() {
+    ///     let prec = d64!(0.1);
+    ///     assert_eq!(d64!(0.05).truncate(prec), d64!(0.0));
+    ///     assert_eq!(d64!(0.15).truncate(prec), d64!(0.1));
+    ///     assert_eq!(d64!(0.19).truncate(prec), d64!(0.1));
+    /// }
+    /// ```
     pub fn truncate<O: AsRef<d64>>(mut self, other: O) -> d64 {
         d64::with_round_down(|ctx| unsafe { *decDoubleQuantize(&mut self, &self, other.as_ref(), ctx) })
     }
 
     /// Like `quantize`, but uses `Rounding::HalfUp`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// #![feature(proc_macro_hygiene)]
+    /// extern crate decimal;
+    /// extern crate decimal_macros;
+    /// use decimal_macros::*;
+    ///
+    /// fn main() {
+    ///     let prec = d64!(0.1);
+    ///     assert_eq!(d64!(0.15).round(prec), d64!(0.2));
+    ///     assert_eq!(d64!(0.14999999999).round(prec), d64!(0.1));
+    ///     assert_eq!(d64!(0.19).round(prec), d64!(0.2));
+    ///     assert_eq!(d64!(0.05).round(prec), d64!(0.1));
+    /// }
+    /// ```
     pub fn round<O: AsRef<d64>>(mut self, other: O) -> d64 {
         d64::with_half_up(|ctx| unsafe { *decDoubleQuantize(&mut self, &self, other.as_ref(), ctx) })
     }
@@ -1094,7 +1144,6 @@ mod tests {
     use rand::{self, Rng};
     use rand::distributions::{IndependentSample, Range};
 
-    #[cfg(feature = "nightly")]
     #[allow(unused_imports)]
     use test::{black_box, Bencher};
 
@@ -1133,7 +1182,6 @@ mod tests {
         assert_eq!(d64::from(d128!(1.23456)), d64!(1.23456));
     }
 
-    #[cfg(feature = "nightly")]
     #[bench]
     fn sums_vec_of_100_000(b: &mut Bencher) {
         let x = d64!(0.00012345);
@@ -1194,7 +1242,6 @@ mod tests {
         assert_eq!(x.max(d64!(-100)), d64!(-100));
     }
 
-    #[cfg(feature = "nightly")]
     #[bench]
     fn random_number_via_u32_range(b: &mut Bencher) {
         let mut rng = rand::thread_rng();
@@ -1217,7 +1264,6 @@ mod tests {
         assert!(d <= d64!(1.2));
     }
 
-    #[cfg(feature = "nightly")]
     #[bench]
     fn random_number_via_u32(b: &mut Bencher) {
         let mut rng = rand::thread_rng();
@@ -1227,7 +1273,6 @@ mod tests {
         });
     }
 
-    // #[cfg(feature = "nightly")]
     // #[bench]
     // fn random_number_via_u32(b: &mut Bencher) {
     //     let mut rng = rand::thread_rng();
