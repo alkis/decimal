@@ -19,7 +19,7 @@ use std::ffi::{CStr, CString};
 use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::iter::Sum;
-use std::mem::uninitialized;
+use std::mem::MaybeUninit;
 use std::num::FpCategory;
 use std::ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Div, DivAssign, Rem, RemAssign,
                Neg, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not, Shl,
@@ -135,8 +135,8 @@ impl<'de> serde::de::Visitor<'de> for d64Visitor {
 impl From<i32> for d64 {
     fn from(val: i32) -> d64 {
         unsafe {
-            let mut res: d64 = uninitialized();
-            *decDoubleFromInt32(&mut res, val)
+            let mut res: MaybeUninit<d64> = MaybeUninit::uninit();
+            *decDoubleFromInt32(res.as_mut_ptr(), val)
         }
     }
 }
@@ -145,15 +145,15 @@ impl From<i32> for d64 {
 impl From<u32> for d64 {
     fn from(val: u32) -> d64 {
         unsafe {
-            let mut res: d64 = uninitialized();
-            *decDoubleFromUInt32(&mut res, val)
+            let mut res: MaybeUninit<d64> = MaybeUninit::uninit();
+            *decDoubleFromUInt32(res.as_mut_ptr(), val)
         }
     }
 }
 
 /// Converts an u64 to d64. The result is exact and no error is possible.
 impl From<u64> for d64 {
-    fn from(mut val: u64) -> d64 {
+    fn from(val: u64) -> d64 {
         /*
         let mut bcd = [0u8; 16];
         let mut i = 15;
@@ -163,8 +163,8 @@ impl From<u64> for d64 {
             i -= 1;
         }
         unsafe {
-            let mut res: d64 = uninitialized();
-            *decDoubleFromBCD(&mut res, 0, bcd.as_ptr(), 0)
+            let mut res: MaybeUninit<d64> = MaybeUninit::uninit();
+            *decDoubleFromBCD(res.as_mut_ptr(), 0, bcd.as_ptr(), 0)
         }
         */
         let wider = d128::from(val);
@@ -212,11 +212,11 @@ impl FromStr for d64 {
             Ok(cstr) => cstr,
         };
         d64::with_context(|ctx| {
-            let mut res: d64;
-            unsafe {
-                res = uninitialized();
-                decDoubleFromString(&mut res, cstr.as_ptr(), ctx);
-            }
+            let res: d64 = unsafe {
+                let mut res: MaybeUninit<d64> = MaybeUninit::uninit();
+                decDoubleFromString(res.as_mut_ptr(), cstr.as_ptr(), ctx);
+                res.assume_init()
+            };
             Ok(res)
         })
     }
@@ -320,7 +320,10 @@ macro_rules! ffi_unary_op {
 
             fn $method(self) -> $t {
                 $t::with_context(|ctx| {
-                    unsafe { let mut res: $t = uninitialized(); *$ffi(&mut res, self, ctx)}
+                    unsafe {
+                        let mut res: MaybeUninit<$t> = MaybeUninit::uninit();
+                        *$ffi(res.as_mut_ptr(), self, ctx)
+                    }
                 })
             }
         }
@@ -365,7 +368,9 @@ macro_rules! ffi_binary_op {
 
             fn $method(self, other: &'a $t) -> $t {
                 $t::with_context(|ctx| {
-                    unsafe { let mut res: $t = uninitialized(); *$ffi(&mut res, self, other, ctx) }
+                    unsafe {
+                        let mut res: MaybeUninit<$t> = MaybeUninit::uninit();
+                        *$ffi(res.as_mut_ptr(), self, other, ctx) }
                 })
             }
         }
@@ -439,8 +444,8 @@ impl<'a> Shl<usize> for &'a d64 {
         let shift = d64::from(amount as u32);
         d64::with_context(|ctx| {
             unsafe {
-                let mut res: d64 = uninitialized();
-                *decDoubleShift(&mut res, self, &shift, ctx)
+                let mut res: MaybeUninit<d64> = MaybeUninit::uninit();
+                *decDoubleShift(res.as_mut_ptr(), self, &shift, ctx)
             }
         })
     }
@@ -478,8 +483,8 @@ impl<'a> Shr<usize> for &'a d64 {
         let shift = -d64::from(amount as u32);
         d64::with_context(|ctx| {
             unsafe {
-                let mut res: d64 = uninitialized();
-                *decDoubleShift(&mut res, self, &shift, ctx)
+                let mut res: MaybeUninit<d64> = MaybeUninit::uninit();
+                *decDoubleShift(res.as_mut_ptr(), self, &shift, ctx)
             }
         })
     }
@@ -507,16 +512,16 @@ impl<T> Sum<T> for d64 where T: Borrow<d64> {
 impl d64 {
     fn default_context() -> Context {
         unsafe {
-            let mut res: Context = uninitialized();
-            *decContextDefault(&mut res, 64)
+            let mut res: MaybeUninit<Context> = MaybeUninit::uninit();
+            *decContextDefault(res.as_mut_ptr(), 64)
         }
     }
 
     /// Initialize a `Context` with the specified `Rounding`.
     fn with_rounding(rounding: Rounding) -> Context {
         unsafe {
-            let mut res: Context = uninitialized();
-            let mut ctx = *decContextDefault(&mut res, 64);
+            let mut res: MaybeUninit<Context> = MaybeUninit::uninit();
+            let mut ctx = *decContextDefault(res.as_mut_ptr(), 64);
             decContextSetRounding(&mut ctx, rounding as u32);
             ctx
         }
@@ -571,7 +576,7 @@ impl d64 {
             Self::from_str("qNaN").unwrap()
         } else {
             unsafe {
-                let mut res: d64 = uninitialized();
+                let mut res: d64 = MaybeUninit::zeroed().assume_init();
                 for (i, octet) in s.as_bytes().chunks(2).rev().enumerate() {
                     //println!("i = {}, octet = {:?}", i, octet);
                     res.bytes[i] = match u8::from_str_radix(from_utf8_unchecked(octet), 16) {
@@ -589,8 +594,8 @@ impl d64 {
     /// Returns the d64 representing +0.
     pub fn zero() -> d64 {
         unsafe {
-            let mut res = uninitialized();
-            *decDoubleZero(&mut res)
+            let mut res: MaybeUninit<d64> = MaybeUninit::uninit();
+            *decDoubleZero(res.as_mut_ptr())
         }
     }
 
@@ -668,8 +673,8 @@ impl d64 {
     /// has an integral value in the range –1999999997 through +999999999.
     pub fn pow<O: AsRef<d64>>(mut self, exp: O) -> d64 {
         d64::with_context(|ctx| unsafe {
-            let mut num_self: decNumber = uninitialized();
-            let mut num_exp: decNumber = uninitialized();
+            let mut num_self: decNumber = MaybeUninit::uninit().assume_init();
+            let mut num_exp: decNumber  = MaybeUninit::uninit().assume_init();
             decimal64ToNumber(&self, &mut num_self);
             decimal64ToNumber(exp.as_ref(), &mut num_exp);
             decNumberPower(&mut num_self, &num_self, &num_exp, ctx);
@@ -684,8 +689,8 @@ impl d64 {
     /// 10<sup>6</sup> restrictions on precision and range apply as described above.
     pub fn exp<O: AsRef<d64>>(mut self, exp: O) -> d64 {
         d64::with_context(|ctx| unsafe {
-            let mut num_self: decNumber = uninitialized();
-            let mut num_exp: decNumber = uninitialized();
+            let mut num_self: decNumber = MaybeUninit::uninit().assume_init();
+            let mut num_exp: decNumber  = MaybeUninit::uninit().assume_init();
             decimal64ToNumber(&self, &mut num_self);
             decimal64ToNumber(exp.as_ref(), &mut num_exp);
             decNumberExp(&mut num_self, &num_self, &num_exp, ctx);
@@ -701,7 +706,7 @@ impl d64 {
     /// apply as described above.
     pub fn ln(mut self) -> d64 {
         d64::with_context(|ctx| unsafe {
-            let mut num_self: decNumber = uninitialized();
+            let mut num_self: decNumber = MaybeUninit::uninit().assume_init();
             decimal64ToNumber(&self, &mut num_self);
             decNumberLn(&mut num_self, &num_self, ctx);
             *decimal64FromNumber(&mut self, &num_self, ctx)
@@ -716,7 +721,7 @@ impl d64 {
     /// precision and range apply as described above.
     pub fn log10(mut self) -> d64 {
         d64::with_context(|ctx| unsafe {
-            let mut num_self: decNumber = uninitialized();
+            let mut num_self: decNumber = MaybeUninit::uninit().assume_init();
             decimal64ToNumber(&self, &mut num_self);
             decNumberLog10(&mut num_self, &num_self, ctx);
             *decimal64FromNumber(&mut self, &num_self, ctx)
@@ -837,8 +842,8 @@ impl d64 {
     /// only if `self` or `other` is a NaN.
     pub fn compare<O: AsRef<d64>>(&self, other: O) -> d64 {
         d64::with_context(|ctx| unsafe {
-            let mut res: d64 = uninitialized();
-            *decDoubleCompare(&mut res, self, other.as_ref(), ctx)
+            let mut res: MaybeUninit<d64> = MaybeUninit::uninit();
+            *decDoubleCompare(res.as_mut_ptr(), self, other.as_ref(), ctx)
         })
     }
 
@@ -847,8 +852,8 @@ impl d64 {
     /// Infinity and NaN). The result will be –1, 0, or 1.
     pub fn compare_total<O: AsRef<d64>>(&self, other: O) -> d64 {
         d64::with_context(|ctx| unsafe {
-            let mut res: d64 = uninitialized();
-            *decDoubleCompareTotal(&mut res, self, other.as_ref(), ctx)
+            let mut res: MaybeUninit<d64> = MaybeUninit::uninit();
+            *decDoubleCompareTotal(res.as_mut_ptr(), self, other.as_ref(), ctx)
         })
     }
 
@@ -986,8 +991,8 @@ impl slog::Value for d64 {
 impl From<d128> for d64 {
     fn from(val: d128) -> Self {
         d64::with_context(|ctx| unsafe {
-            let mut res: d64 = uninitialized();
-            *decDoubleFromWider(&mut res, &val, ctx)
+            let mut res: MaybeUninit<d64> = MaybeUninit::uninit();
+            *decDoubleFromWider(res.as_mut_ptr(), &val, ctx)
         })
     }
 }
