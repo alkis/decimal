@@ -226,7 +226,7 @@ impl Into<u32> for d128 {
 /// payload is 0.
 impl fmt::Display for d128 {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        let mut buf: [c_char; 43] = [0; 43];
+        let mut buf = [0; 43];
         unsafe {
             decQuadToString(self, buf.as_mut().as_mut_ptr());
             let cstr = CStr::from_ptr(buf.as_ptr());
@@ -246,7 +246,7 @@ impl fmt::Debug for d128 {
 /// exponential notation is used the exponent will be a multiple of 3.
 impl fmt::LowerExp for d128 {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        let mut buf: [c_char; 43] = [0; 43];
+        let mut buf = [0; 43];
         unsafe {
             decQuadToEngString(self, buf.as_mut().as_mut_ptr());
             let cstr = CStr::from_ptr(buf.as_ptr());
