@@ -576,7 +576,7 @@ impl d64 {
             Self::from_str("qNaN").unwrap()
         } else {
             unsafe {
-                let mut res: d64 = MaybeUninit::zeroed().assume_init();
+                let mut res: d64 = d64::from_raw_bytes([0u8; 8]);
                 for (i, octet) in s.as_bytes().chunks(2).rev().enumerate() {
                     //println!("i = {}, octet = {:?}", i, octet);
                     res.bytes[i] = match u8::from_str_radix(from_utf8_unchecked(octet), 16) {
@@ -673,10 +673,12 @@ impl d64 {
     /// has an integral value in the range –1999999997 through +999999999.
     pub fn pow<O: AsRef<d64>>(mut self, exp: O) -> d64 {
         d64::with_context(|ctx| unsafe {
-            let mut num_self: decNumber = MaybeUninit::uninit().assume_init();
-            let mut num_exp: decNumber  = MaybeUninit::uninit().assume_init();
-            decimal64ToNumber(&self, &mut num_self);
-            decimal64ToNumber(exp.as_ref(), &mut num_exp);
+            let mut num_self    : MaybeUninit<decNumber> = MaybeUninit::uninit();
+            let mut num_exp     : MaybeUninit<decNumber> = MaybeUninit::uninit();
+            decimal64ToNumber(&self, num_self.as_mut_ptr());
+            decimal64ToNumber(exp.as_ref(), num_exp.as_mut_ptr());
+            let mut num_self = num_self.assume_init();
+            let num_exp = num_exp.assume_init();
             decNumberPower(&mut num_self, &num_self, &num_exp, ctx);
             *decimal64FromNumber(&mut self, &num_self, ctx)
         })
@@ -689,10 +691,12 @@ impl d64 {
     /// 10<sup>6</sup> restrictions on precision and range apply as described above.
     pub fn exp<O: AsRef<d64>>(mut self, exp: O) -> d64 {
         d64::with_context(|ctx| unsafe {
-            let mut num_self: decNumber = MaybeUninit::uninit().assume_init();
-            let mut num_exp: decNumber  = MaybeUninit::uninit().assume_init();
-            decimal64ToNumber(&self, &mut num_self);
-            decimal64ToNumber(exp.as_ref(), &mut num_exp);
+            let mut num_self    : MaybeUninit<decNumber> = MaybeUninit::uninit();
+            let mut num_exp     : MaybeUninit<decNumber> = MaybeUninit::uninit();
+            decimal64ToNumber(&self, num_self.as_mut_ptr());
+            decimal64ToNumber(exp.as_ref(), num_exp.as_mut_ptr());
+            let mut num_self = num_self.assume_init();
+            let num_exp = num_exp.assume_init();
             decNumberExp(&mut num_self, &num_self, &num_exp, ctx);
             *decimal64FromNumber(&mut self, &num_self, ctx)
         })
@@ -706,8 +710,9 @@ impl d64 {
     /// apply as described above.
     pub fn ln(mut self) -> d64 {
         d64::with_context(|ctx| unsafe {
-            let mut num_self: decNumber = MaybeUninit::uninit().assume_init();
-            decimal64ToNumber(&self, &mut num_self);
+            let mut num_self    : MaybeUninit<decNumber> = MaybeUninit::uninit();
+            decimal64ToNumber(&self, num_self.as_mut_ptr());
+            let mut num_self = num_self.assume_init();
             decNumberLn(&mut num_self, &num_self, ctx);
             *decimal64FromNumber(&mut self, &num_self, ctx)
         })
@@ -721,8 +726,9 @@ impl d64 {
     /// precision and range apply as described above.
     pub fn log10(mut self) -> d64 {
         d64::with_context(|ctx| unsafe {
-            let mut num_self: decNumber = MaybeUninit::uninit().assume_init();
-            decimal64ToNumber(&self, &mut num_self);
+            let mut num_self    : MaybeUninit<decNumber> = MaybeUninit::uninit();
+            decimal64ToNumber(&self, num_self.as_mut_ptr());
+            let mut num_self = num_self.assume_init();
             decNumberLog10(&mut num_self, &num_self, ctx);
             *decimal64FromNumber(&mut self, &num_self, ctx)
         })
