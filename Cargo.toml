@@ -1,27 +1,17 @@
 [package]
 name = "decimal"
-version = "2.4.0"
-authors = ["Alkis Evlogimenos <alkis@evlogimenos.com>", "Jonathan Strong <jstrong@tioscapital.com>"]
+version = "2.0.4"
+authors = ["Alkis Evlogimenos <alkis@evlogimenos.com>"]
 build = "build.rs"
 description = "Decimal floating point arithmetic for Rust"
-autobins = false
-edition = "2018"
+readme = "README.md"
+repository = "https://github.com/alkis/decimal"
+documentation = "https://alkis.github.io/decimal"
+keywords = ["decimal", "decNumber"]
+license = "Apache-2.0"
 
-[lib]
-name = "decimal"
-path = "src/lib.rs"
-
-[[bin]]
-path = "src/bytes.rs"
-name = "bytes"
-
-[[bin]]
-path = "src/to_string.rs"
-name = "to-string"
-
-[[bin]]
-path = "src/run_test.rs"
-name = "run-test"
+[badges]
+travis-ci = { repository = "alkis/decimal" }
 
 [dependencies]
 bitflags = "1"
@@ -29,21 +19,12 @@ libc = "0.2"
 ord_subset = { optional = true, version = "3" }
 rustc-serialize = { optional = true, version = "0.3" }
 serde = { optional = true, version = "1" }
-clap = { features = [], version = "2" }
-faster = { git = "https://github.com/AdamNiederer/faster", branch = "master", optional = true }
-slog = { version = "2", optional = true }
-approx = "0.1"
 
 [features]
-default = ["ord_subset", "serde", "slog"]
+default = ["ord_subset", "rustc-serialize", "serde"]
 
 [build-dependencies]
 cc = "1"
 
 [dev-dependencies]
 serde_json = "1"
-rand = "0.4"
-decimal-macros = { version = "0.2", path = "decimal-macros" }
-
-[profile.test]
-opt-level = 2
