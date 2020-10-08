@@ -10,6 +10,8 @@ extern crate serde;
 #[cfg(feature = "serde")]
 #[cfg(test)]
 extern crate serde_json;
+#[cfg(feature = "slog")]
+extern crate slog;
 #[cfg(test)]
 extern crate rand;
 
