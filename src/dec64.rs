@@ -3,7 +3,7 @@ use super::Status;
 use super::Rounding;
 
 use crate::context::*;
-use libc::{c_char, int32_t, uint8_t, uint32_t};
+use libc::c_char;
 #[cfg(feature = "ord_subset")]
 use ord_subset;
 #[cfg(feature = "rustc-serialize")]
@@ -37,7 +37,7 @@ thread_local!(static HALF_UP: RefCell<Context> = RefCell::new(d64::with_rounding
 #[derive(Clone, Copy)]
 /// A 64-bit decimal floating point type.
 pub struct d64 {
-    bytes: [uint8_t; 8],
+    bytes: [u8; 8],
 }
 
 #[repr(C)]
@@ -190,9 +190,9 @@ impl AsRef<d64> for d64 {
 }
 
 impl Deref for d64 {
-    type Target = [uint8_t; 8];
+    type Target = [u8; 8];
 
-    fn deref(&self) -> &[uint8_t; 8] {
+    fn deref(&self) -> &[u8; 8] {
         &self.bytes
     }
 }
@@ -754,17 +754,16 @@ impl d64 {
     /// # Examples
     ///
     /// ```
-    /// #![feature(proc_macro_hygiene)]
     /// extern crate decimal;
-    /// extern crate decimal_macros;
-    /// use decimal_macros::*;
+    /// use decimal::d64;
+    /// use std::str::FromStr;
     ///
     /// fn main() {
-    ///     let prec = d64!(0.1);
-    ///     assert_eq!(d64!(0.400012342423).quantize(prec), d64!(0.4));
+    ///     let prec = d64::from_str("0.1").unwrap();
+    ///     assert_eq!(d64::from_str("0.400012342423").unwrap().quantize(prec), d64::from_str("0.4").unwrap());
     ///     // uses default rounding (half even)
-    ///     assert_eq!(d64!(0.05).quantize(prec), d64!(0.0));
-    ///     assert_eq!(d64!(0.15).quantize(prec), d64!(0.2));
+    ///     assert_eq!(d64::from_str("0.05").unwrap().quantize(prec), d64::from_str("0.0").unwrap());
+    ///     assert_eq!(d64::from_str("0.15").unwrap().quantize(prec), d64::from_str("0.2").unwrap());
     /// }
     /// ```
     pub fn quantize<O: AsRef<d64>>(mut self, other: O) -> d64 {
@@ -776,16 +775,15 @@ impl d64 {
     /// # Examples
     ///
     /// ```
-    /// #![feature(proc_macro_hygiene)]
     /// extern crate decimal;
-    /// extern crate decimal_macros;
-    /// use decimal_macros::*;
+    /// use decimal::d64;
+    /// use std::str::FromStr;
     ///
     /// fn main() {
-    ///     let prec = d64!(0.1);
-    ///     assert_eq!(d64!(0.05).truncate(prec), d64!(0.0));
-    ///     assert_eq!(d64!(0.15).truncate(prec), d64!(0.1));
-    ///     assert_eq!(d64!(0.19).truncate(prec), d64!(0.1));
+    ///     let prec = d64::from_str("0.1").unwrap();
+    ///     assert_eq!(d64::from_str("0.05").unwrap().truncate(prec), d64::from_str("0.0").unwrap());
+    ///     assert_eq!(d64::from_str("0.15").unwrap().truncate(prec), d64::from_str("0.1").unwrap());
+    ///     assert_eq!(d64::from_str("0.19").unwrap().truncate(prec), d64::from_str("0.1").unwrap());
     /// }
     /// ```
     pub fn truncate<O: AsRef<d64>>(mut self, other: O) -> d64 {
@@ -797,17 +795,16 @@ impl d64 {
     /// # Examples
     ///
     /// ```
-    /// #![feature(proc_macro_hygiene)]
     /// extern crate decimal;
-    /// extern crate decimal_macros;
-    /// use decimal_macros::*;
+    /// use decimal::d64;
+    /// use std::str::FromStr;
     ///
     /// fn main() {
-    ///     let prec = d64!(0.1);
-    ///     assert_eq!(d64!(0.15).round(prec), d64!(0.2));
-    ///     assert_eq!(d64!(0.14999999999).round(prec), d64!(0.1));
-    ///     assert_eq!(d64!(0.19).round(prec), d64!(0.2));
-    ///     assert_eq!(d64!(0.05).round(prec), d64!(0.1));
+    ///     let prec = d64::from_str("0.1").unwrap();
+    ///     assert_eq!(d64::from_str("0.15").unwrap().round(prec), d64::from_str("0.2").unwrap());
+    ///     assert_eq!(d64::from_str("0.14999999999").unwrap().round(prec), d64::from_str("0.1").unwrap());
+    ///     assert_eq!(d64::from_str("0.19").unwrap().round(prec), d64::from_str("0.2").unwrap());
+    ///     assert_eq!(d64::from_str("0.05").unwrap().round(prec), d64::from_str("0.1").unwrap());
     /// }
     /// ```
     pub fn round<O: AsRef<d64>>(mut self, other: O) -> d64 {
@@ -1005,16 +1002,16 @@ impl From<d128> for d64 {
 
 extern "C" {
     // Context.
-    fn decContextDefault(ctx: *mut Context, kind: uint32_t) -> *mut Context;
-    fn decContextSetRounding(ctx: *mut Context, rounding: uint32_t);
+    fn decContextDefault(ctx: *mut Context, kind: u32) -> *mut Context;
+    fn decContextSetRounding(ctx: *mut Context, rounding: u32);
     // Utilities and conversions, extractors, etc.
     //fn decDoubleFromBCD(res: *mut d64, exp: i32, bcd: *const u8, sign: i32) -> *mut d64;
-    fn decDoubleFromInt32(res: *mut d64, src: int32_t) -> *mut d64;
+    fn decDoubleFromInt32(res: *mut d64, src: i32) -> *mut d64;
     fn decDoubleFromString(res: *mut d64, s: *const c_char, ctx: *mut Context) -> *mut d64;
-    fn decDoubleFromUInt32(res: *mut d64, src: uint32_t) -> *mut d64;
+    fn decDoubleFromUInt32(res: *mut d64, src: u32) -> *mut d64;
     fn decDoubleToString(src: *const d64, s: *mut c_char) -> *mut c_char;
-    fn decDoubleToInt32(src: *const d64, ctx: *mut Context, round: Rounding) -> int32_t;
-    fn decDoubleToUInt32(src: *const d64, ctx: *mut Context, round: Rounding) -> uint32_t;
+    fn decDoubleToInt32(src: *const d64, ctx: *mut Context, round: Rounding) -> i32;
+    fn decDoubleToUInt32(src: *const d64, ctx: *mut Context, round: Rounding) -> u32;
     fn decDoubleFromWider(res: *mut d64, src: *const d128, ctx: *mut Context) -> *mut d64;
     fn decDoubleToEngString(res: *const d64, s: *mut c_char) -> *mut c_char;
     fn decDoubleZero(res: *mut d64) -> *mut d64;
@@ -1098,20 +1095,20 @@ extern "C" {
     fn decDoubleCanonical(res: *mut d64, src: *const d64) -> *mut d64;
     // Non-computational.
     fn decDoubleClass(src: *const d64) -> Class;
-    fn decDoubleDigits(src: *const d64) -> uint32_t;
-    fn decDoubleIsCanonical(src: *const d64) -> uint32_t;
-    fn decDoubleIsFinite(src: *const d64) -> uint32_t;
-    fn decDoubleIsInteger(src: *const d64) -> uint32_t;
-    fn decDoubleIsLogical(src: *const d64) -> uint32_t;
-    fn decDoubleIsInfinite(src: *const d64) -> uint32_t;
-    fn decDoubleIsNaN(src: *const d64) -> uint32_t;
-    fn decDoubleIsNegative(src: *const d64) -> uint32_t;
-    fn decDoubleIsNormal(src: *const d64) -> uint32_t;
-    fn decDoubleIsPositive(src: *const d64) -> uint32_t;
-    fn decDoubleIsSignaling(src: *const d64) -> uint32_t;
-    fn decDoubleIsSigned(src: *const d64) -> uint32_t;
-    fn decDoubleIsSubnormal(src: *const d64) -> uint32_t;
-    fn decDoubleIsZero(src: *const d64) -> uint32_t;
+    fn decDoubleDigits(src: *const d64) -> u32;
+    fn decDoubleIsCanonical(src: *const d64) -> u32;
+    fn decDoubleIsFinite(src: *const d64) -> u32;
+    fn decDoubleIsInteger(src: *const d64) -> u32;
+    fn decDoubleIsLogical(src: *const d64) -> u32;
+    fn decDoubleIsInfinite(src: *const d64) -> u32;
+    fn decDoubleIsNaN(src: *const d64) -> u32;
+    fn decDoubleIsNegative(src: *const d64) -> u32;
+    fn decDoubleIsNormal(src: *const d64) -> u32;
+    fn decDoubleIsPositive(src: *const d64) -> u32;
+    fn decDoubleIsSignaling(src: *const d64) -> u32;
+    fn decDoubleIsSigned(src: *const d64) -> u32;
+    fn decDoubleIsSubnormal(src: *const d64) -> u32;
+    fn decDoubleIsZero(src: *const d64) -> u32;
     // decNumber stuff.
     fn decimal64FromNumber(res: *mut d64, src: *const decNumber, ctx: *mut Context) -> *mut d64;
     fn decimal64ToNumber(src: *const d64, res: *mut decNumber) -> *mut decNumber;
