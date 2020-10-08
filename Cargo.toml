@@ -19,6 +19,7 @@ libc = "0.2"
 ord_subset = { optional = true, version = "3" }
 rustc-serialize = { optional = true, version = "0.3" }
 serde = { optional = true, version = "1" }
+slog = { version = "2", optional = true }
 
 [features]
 default = ["ord_subset", "rustc-serialize", "serde"]
@@ -28,3 +29,4 @@ cc = "1"
 
 [dev-dependencies]
 serde_json = "1"
+rand = "0.4"
