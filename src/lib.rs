@@ -10,6 +10,8 @@ extern crate serde;
 #[cfg(feature = "serde")]
 #[cfg(test)]
 extern crate serde_json;
+#[cfg(test)]
+extern crate rand;
 
 #[macro_export]
 /// A macro to construct d128 literals.
@@ -33,8 +35,10 @@ macro_rules! d128 {
 
 mod context;
 mod dec128;
+mod dec64;
 
 pub use dec128::d128;
+pub use crate::dec64::d64;
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, PartialEq)]
