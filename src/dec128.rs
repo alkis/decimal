@@ -3,7 +3,7 @@ use super::Status;
 use super::Rounding;
 
 use context::*;
-use libc::{c_char, int32_t, uint8_t, uint32_t};
+use libc::c_char;
 #[cfg(feature = "ord_subset")]
 use ord_subset;
 #[cfg(feature = "rustc-serialize")]
@@ -31,7 +31,7 @@ thread_local!(static CTX: RefCell<Context> = RefCell::new(d128::default_context(
 #[derive(Clone, Copy)]
 /// A 128-bit decimal floating point type.
 pub struct d128 {
-    bytes: [uint8_t; 16],
+    bytes: [u8; 16],
 }
 
 #[repr(C)]
@@ -69,7 +69,7 @@ impl Into<ord_subset::OrdVar<d128>> for d128 {
 #[cfg(feature = "rustc-serialize")]
 impl Decodable for d128 {
     fn decode<D: Decoder>(d: &mut D) -> Result<Self, D::Error> {
-        let s = try!(d.read_str());
+        let s = d.read_str()?;
         Ok(Self::from_str(&s).expect("unreachable"))
     }
 }
@@ -259,7 +259,7 @@ impl fmt::LowerExp for d128 {
 impl fmt::LowerHex for d128 {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         for b in self.bytes.iter().rev() {
-            try!(write!(fmt, "{:02x}", b));
+            write!(fmt, "{:02x}", b)?;
         }
         Ok(())
     }
@@ -867,15 +867,15 @@ impl d128 {
 
 extern "C" {
     // Context.
-    fn decContextDefault(ctx: *mut Context, kind: uint32_t) -> *mut Context;
+    fn decContextDefault(ctx: *mut Context, kind: u32) -> *mut Context;
     // Utilities and conversions, extractors, etc.
     fn decQuadFromBCD(res: *mut d128, exp: i32, bcd: *const u8, sign: i32) -> *mut d128;
-    fn decQuadFromInt32(res: *mut d128, src: int32_t) -> *mut d128;
+    fn decQuadFromInt32(res: *mut d128, src: i32) -> *mut d128;
     fn decQuadFromString(res: *mut d128, s: *const c_char, ctx: *mut Context) -> *mut d128;
-    fn decQuadFromUInt32(res: *mut d128, src: uint32_t) -> *mut d128;
+    fn decQuadFromUInt32(res: *mut d128, src: u32) -> *mut d128;
     fn decQuadToString(src: *const d128, s: *mut c_char) -> *mut c_char;
-    fn decQuadToInt32(src: *const d128, ctx: *mut Context, round: Rounding) -> int32_t;
-    fn decQuadToUInt32(src: *const d128, ctx: *mut Context, round: Rounding) -> uint32_t;
+    fn decQuadToInt32(src: *const d128, ctx: *mut Context, round: Rounding) -> i32;
+    fn decQuadToUInt32(src: *const d128, ctx: *mut Context, round: Rounding) -> u32;
     fn decQuadToEngString(res: *const d128, s: *mut c_char) -> *mut c_char;
     fn decQuadZero(res: *mut d128) -> *mut d128;
     // Computational.
@@ -958,20 +958,20 @@ extern "C" {
     fn decQuadCanonical(res: *mut d128, src: *const d128) -> *mut d128;
     // Non-computational.
     fn decQuadClass(src: *const d128) -> Class;
-    fn decQuadDigits(src: *const d128) -> uint32_t;
-    fn decQuadIsCanonical(src: *const d128) -> uint32_t;
-    fn decQuadIsFinite(src: *const d128) -> uint32_t;
-    fn decQuadIsInteger(src: *const d128) -> uint32_t;
-    fn decQuadIsLogical(src: *const d128) -> uint32_t;
-    fn decQuadIsInfinite(src: *const d128) -> uint32_t;
-    fn decQuadIsNaN(src: *const d128) -> uint32_t;
-    fn decQuadIsNegative(src: *const d128) -> uint32_t;
-    fn decQuadIsNormal(src: *const d128) -> uint32_t;
-    fn decQuadIsPositive(src: *const d128) -> uint32_t;
-    fn decQuadIsSignaling(src: *const d128) -> uint32_t;
-    fn decQuadIsSigned(src: *const d128) -> uint32_t;
-    fn decQuadIsSubnormal(src: *const d128) -> uint32_t;
-    fn decQuadIsZero(src: *const d128) -> uint32_t;
+    fn decQuadDigits(src: *const d128) -> u32;
+    fn decQuadIsCanonical(src: *const d128) -> u32;
+    fn decQuadIsFinite(src: *const d128) -> u32;
+    fn decQuadIsInteger(src: *const d128) -> u32;
+    fn decQuadIsLogical(src: *const d128) -> u32;
+    fn decQuadIsInfinite(src: *const d128) -> u32;
+    fn decQuadIsNaN(src: *const d128) -> u32;
+    fn decQuadIsNegative(src: *const d128) -> u32;
+    fn decQuadIsNormal(src: *const d128) -> u32;
+    fn decQuadIsPositive(src: *const d128) -> u32;
+    fn decQuadIsSignaling(src: *const d128) -> u32;
+    fn decQuadIsSigned(src: *const d128) -> u32;
+    fn decQuadIsSubnormal(src: *const d128) -> u32;
+    fn decQuadIsZero(src: *const d128) -> u32;
     // decNumber stuff.
     fn decimal128FromNumber(res: *mut d128, src: *const decNumber, ctx: *mut Context) -> *mut d128;
     fn decimal128ToNumber(src: *const d128, res: *mut decNumber) -> *mut decNumber;
@@ -1062,7 +1062,7 @@ mod tests {
         #[derive(RustcDecodable, RustcEncodable, PartialEq, Debug)]
         struct Test {
             price: d128,
-        };
+        }
         let a = Test { price: d128!(12.3456) };
         assert_eq!(json::encode(&a).unwrap(), "{\"price\":\"12.3456\"}");
         let b = json::decode("{\"price\":\"12.3456\"}").unwrap();

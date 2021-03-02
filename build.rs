@@ -7,6 +7,7 @@ fn main() {
         "0"
     };
     cc::Build::new()
+        .warnings(false)
         .include("decNumber")
         .file("decNumber/decContext.c")
         .file("decNumber/decDouble.c")

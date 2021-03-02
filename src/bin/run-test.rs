@@ -23,7 +23,7 @@ fn find_end_quote(s: &str, quote: char) -> Option<usize> {
 }
 
 fn split_token<'a>(line: &'a str) -> (&'a str, &'a str) {
-    let line = line.trim_left();
+    let line = line.trim_start();
     if line.starts_with("--") {
         ("", "")
     } else if line.starts_with("\"") {
@@ -153,7 +153,7 @@ enum Instr<'a> {
 }
 
 fn parse_directive<'a>(s: &mut Scanner<'a>) -> Directive<'a> {
-    let keyword = s.current().trim_right_matches(':').to_lowercase();
+    let keyword = s.current().trim_end_matches(':').to_lowercase();
     match keyword.as_ref() {
         "precision" => {
             let val = s.next().parse::<isize>().expect("No value for precision");
@@ -174,7 +174,7 @@ fn parse_directive<'a>(s: &mut Scanner<'a>) -> Directive<'a> {
         }
         "maxexponent" => {
             let val = s.next()
-                       .trim_left_matches('+')
+                       .trim_start_matches('+')
                        .parse::<isize>()
                        .expect("No value for maxexponent");
             Directive::MaxExponent(val)
@@ -399,20 +399,20 @@ impl<'a> fmt::Display for TestResult<'a> {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             TestResult::Pass(ref test) => {
-                try!(write!(fmt, "[   PASS  ] {}", test.raw));
+                write!(fmt, "[   PASS  ] {}", test.raw)?;
             }
             TestResult::Fail(ref test, ref actual, ref status) => {
                 let exp_flags = format!("{:?}", test.expected_status);
                 let act_flags = format!("{:?}", status);
-                try!(write!(fmt, "[   FAIL  ] {}\n", test.raw));
-                try!(write!(fmt,
+                write!(fmt, "[   FAIL  ] {}\n", test.raw)?;
+                write!(fmt,
                             "\tEXPECTED: {:<43} {:<43}\n",
                             test.expected_value,
-                            exp_flags));
-                try!(write!(fmt, "\t  ACTUAL: {:<43} {:<43}", actual, act_flags));
+                            exp_flags)?;
+                write!(fmt, "\t  ACTUAL: {:<43} {:<43}", actual, act_flags)?;
             }
             TestResult::Ignored(ref test) => {
-                try!(write!(fmt, "[ IGNORED ] {}", test.raw));
+                write!(fmt, "[ IGNORED ] {}", test.raw)?;
             }
         }
         Ok(())
