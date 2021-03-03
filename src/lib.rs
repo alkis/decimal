@@ -10,6 +10,7 @@ extern crate serde;
 #[cfg(feature = "serde")]
 #[cfg(test)]
 extern crate serde_json;
+extern crate void;
 
 #[macro_export]
 /// A macro to construct d128 literals.

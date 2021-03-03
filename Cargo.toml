@@ -19,6 +19,7 @@ libc = "0.2"
 ord_subset = { optional = true, version = "3" }
 rustc-serialize = { optional = true, version = "0.3" }
 serde = { optional = true, version = "1" }
+void = "1.0"
 
 [features]
 default = ["ord_subset", "rustc-serialize", "serde"]
