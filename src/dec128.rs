@@ -123,6 +123,29 @@ impl<'de> serde::de::Visitor<'de> for d128Visitor {
         use serde::de::Unexpected;
         d128::from_str(s).map_err(|_| E::invalid_value(Unexpected::Str(s), &self))
     }
+
+    #[cfg(feature = "serde_lossy")]
+    fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
+        where E: serde::de::Error,
+    {
+        Ok(v.into())
+    }
+
+    #[cfg(feature = "serde_lossy")]
+    fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
+        where E: serde::de::Error,
+    {
+        Ok(v.into())
+    }
+
+    #[cfg(feature = "serde_lossy")]
+    fn visit_f64<E>(self, v: f64) -> Result<Self::Value, E>
+        where E: serde::de::Error,
+    {
+        // This seems to be the best way to convert from f64 to str.
+        // We already have a f64 here, so we already lost precision.
+        self.visit_str(format!("{}", v).as_str())
+    }
 }
 
 /// Converts an i32 to d128. The result is exact and no error is possible.
@@ -1079,6 +1102,31 @@ mod tests {
             "{\"amt\":\"9.9\",\"price\":\"432.232\"}");
         let b = from_str("{\"price\":\"432.232\",\"amt\":\"9.9\"}").unwrap();
         assert_eq!(a, b);
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn test_serde_readme() {
+        use ::serde_json;
+        assert_eq!(d128!(5.4321), serde_json::from_str("\"5.4321\"").unwrap());
+        assert_eq!("\"1.2345\"".to_string(), serde_json::to_string(&d128!(1.2345)).unwrap());
+    }
+
+    #[cfg(feature = "serde_lossy")]
+    #[test]
+    fn test_serde_lossy() {
+        let map : BTreeMap<String, d128> = from_str(r###"{
+            "negative_number": -1,
+            "positive_number": 3,
+            "large_positive_number": 5000000000,
+            "half": 0.5,
+            "fifth": 0.2
+        }"###).expect("Expected parsable json");
+        assert_eq!(Some(&d128!(-1)), map.get("negative_number"));
+        assert_eq!(Some(&d128!(3)), map.get("positive_number"));
+        assert_eq!(Some(&d128!(5000000000)), map.get("large_positive_number"));
+        assert_eq!(Some(&d128!(0.5)), map.get("half"));
+        assert_eq!(Some(&d128!(0.2)), map.get("fifth"));
     }
 
     #[test]

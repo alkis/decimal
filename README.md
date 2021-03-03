@@ -32,3 +32,19 @@ assert_eq(x + y, z);
 $ cargo build
 $ ./target/debug/run-test decTest/decQuad.decTest
 ```
+# (De)serializing using serde
+
+`d128` supports (de)serialization using serde by default (feature `serde`). d128 is serialized from and to string:
+
+```rust
+    assert_eq!(d128!(5.4321), serde_json::from_str("\"5.4321\"").unwrap());
+    assert_eq!("\"1.2345\"".to_string(), serde_json::to_string(&d128!(1.2345)).unwrap());
+```
+
+If you want to deserialize from numbers, e.g. in json, enable the features `serde` and `serde_lossy`.
+This will make serde _de_serialize integer and floating-point numbers as well.
+
+_Note_: Due to the way serde is designed, using `serde_lossy` to deserialize fractions such as `0.3` can incur in
+*loss of precision*, as the number is deserialized to `f64` first before being converted to `d128`. This is why
+d128 are only ever serialized to Strings. Still, it can make sense to enable `serde_lossy` for an initial import of 
+data that only exists as floating point json; which is from then on treated as d128.
