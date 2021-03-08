@@ -83,7 +83,8 @@ impl Encodable for d128 {
 
 impl Hash for d128 {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.bytes.hash(state);
+        let reduced_self = self.reduce();
+        reduced_self.bytes.hash(state)
     }
 }
 
@@ -1001,6 +1002,7 @@ mod tests {
     use super::*;
     #[cfg(any(feature = "ord_subset", feature = "serde"))]
     use std::collections::BTreeMap;
+    use std::collections::hash_map::DefaultHasher;
 
     #[cfg(feature = "ord_subset")]
     use ord_subset;
@@ -1145,5 +1147,29 @@ mod tests {
         assert_eq!(d128!(10), decimals.iter().sum());
 
         assert_eq!(d128!(10), decimals.into_iter().sum());
+    }
+
+    #[test]
+    fn test_hash() {
+        let d1 = d128::from_str("0.100").unwrap();
+        let d2 = d128::from_str("0.1").unwrap();
+        assert_eq!(d1, d2);
+        let mut hasher = DefaultHasher::new();
+        d1.hash(&mut hasher);
+        let h1 = hasher.finish();
+        let mut hasher = DefaultHasher::new();
+        d2.hash(&mut hasher);
+        let h2 = hasher.finish();
+        assert_eq!(h1, h2);
+
+        let d1 = d128!(0.123);
+        let d2 = d128!(0.234);
+        let mut hasher = DefaultHasher::new();
+        d1.hash(&mut hasher);
+        let h1 = hasher.finish();
+        let mut hasher = DefaultHasher::new();
+        d2.hash(&mut hasher);
+        let h2 = hasher.finish();
+        assert_ne!(h1, h2);
     }
 }
