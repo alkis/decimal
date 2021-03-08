@@ -83,8 +83,8 @@ impl Encodable for d128 {
 
 impl Hash for d128 {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        let trimmed_self = self.trim();
-        trimmed_self.bytes.hash(state)
+        let reduced_self = self.reduce();
+        reduced_self.bytes.hash(state)
     }
 }
 
@@ -738,19 +738,6 @@ impl d128 {
         d128::with_context(|ctx| unsafe { *decQuadScaleB(&mut self, &self, other.as_ref(), ctx) })
     }
 
-    /// Returns self with removed insignificant trailing zeroes.
-    pub fn trim(&self) -> d128 {
-        d128::with_context(|ctx| unsafe {
-            let mut num_self: MaybeUninit<decNumber> = MaybeUninit::uninit();
-            decimal128ToNumber(self, num_self.as_mut_ptr());
-            let mut num_self = num_self.assume_init();
-            decNumberTrim(&mut num_self);
-            let mut trimmed_self: d128 = d128::default();
-            decimal128FromNumber(&mut trimmed_self, &num_self, ctx);
-            trimmed_self
-        })
-    }
-
     // Comparisons.
 
     /// Compares `self` and `other` numerically and returns the result. The result may be –1, 0, 1,
@@ -1007,7 +994,6 @@ extern "C" {
                       rhs: *const decNumber,
                       ctx: *mut Context)
                       -> *mut decNumber;
-    fn decNumberTrim(src: *mut decNumber) -> *mut decNumber;
 }
 
 #[cfg(test)]
@@ -1161,13 +1147,6 @@ mod tests {
         assert_eq!(d128!(10), decimals.iter().sum());
 
         assert_eq!(d128!(10), decimals.into_iter().sum());
-    }
-
-    #[test]
-    fn test_trim() {
-        let d = d128::from_str("0.100").unwrap();
-        assert_eq!("0.100", d.to_string());
-        assert_eq!("0.1", d.trim().to_string());
     }
 
     #[test]
