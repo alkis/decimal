@@ -508,12 +508,12 @@ impl d128 {
     }
 
     /// Creates a d128 from raw bytes. Endianess is host dependent.
-    pub unsafe fn from_raw_bytes(bytes: [u8; 16]) -> d128 {
+    pub unsafe const fn from_raw_bytes(bytes: [u8; 16]) -> d128 {
         d128 { bytes: bytes }
     }
 
     /// Returns raw bytes for this d128. Endianess is host dependent.
-    pub fn to_raw_bytes(&self) -> [u8; 16] {
+    pub const fn to_raw_bytes(&self) -> [u8; 16] {
         self.bytes
     }
 
@@ -549,7 +549,7 @@ impl d128 {
     // Utilities and conversions, extractors, etc.
 
     /// Returns the d128 representing +0.
-    pub fn zero() -> d128 {
+    pub const fn zero() -> d128 {
         unsafe {
             let mut res: MaybeUninit<d128> = MaybeUninit::uninit();
             *decQuadZero(res.as_mut_ptr())
@@ -557,12 +557,12 @@ impl d128 {
     }
 
     /// Returns the d128 representing +Infinity.
-    pub fn infinity() -> d128 {
+    pub const fn infinity() -> d128 {
         d128!(Infinity)
     }
 
     /// Returns the d128 representing -Infinity.
-    pub fn neg_infinity() -> d128 {
+    pub const fn neg_infinity() -> d128 {
         d128!(-Infinity)
     }
 
