@@ -1,0 +1,16 @@
+[package]
+name = "decimal-macros"
+version = "0.1.0"
+authors = [
+    "Callum Tolley <cgtrolley@gmail.com>",
+    "Peter Marheine <peter@taricorp.net>",
+]
+
+edition = "2021"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+decimal = { path = "../" }
+
